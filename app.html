@@ -533,6 +533,7 @@ function vSettings(){
   </div>
   <div class="section">
    <div class="label">ABOUT THIS APP</div>
+   <p><b>Version: Test 001</b></p>
    <p>Everything you add is saved on this phone and works without internet. Use “Send today's work” to send a copy off the phone.</p>
    <p class="hint">Photos and talking work once the phone allows the camera and microphone. Google Lens opens from the share menu.</p>
   </div>
@@ -664,7 +665,7 @@ document.addEventListener('click',e=>{
   case 'sheetyes':{const f=sheetYes;closeSheet();if(f)f();break;}
   case 'sheetno':closeSheet();break;
   case 'export':csvFallback='';go('export');break;
-  case 'dljson':{const items=todayItems();const data=JSON.stringify({made:new Date().toISOString(),by:S.worker?S.worker.letter:'',app:'store-inventory',items},null,1);saveFile('inventory-'+stamp()+'-'+(S.worker?S.worker.letter:'X')+'.json',data,null);break;}
+  case 'dljson':{const items=todayItems();const data=JSON.stringify({made:new Date().toISOString(),by:S.worker?S.worker.letter:'',app:'store-inventory',version:'test-001',items},null,1);saveFile('inventory-'+stamp()+'-'+(S.worker?S.worker.letter:'X')+'.json',data,null);break;}
   case 'dlcsv':{const c=csvOf(todayItems());saveFile('inventory-'+stamp()+'-'+(S.worker?S.worker.letter:'X')+'.csv',c,c);break;}
   case 'copycsv':{const ta=$('#f-csvout');const done=()=>toast('Copied');
    try{navigator.clipboard.writeText(csvFallback).then(done,()=>{ta.select();toast('Selected. Use Copy from the menu.');});}catch(err){ta.select();}break;}
