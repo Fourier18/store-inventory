@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <title>Store Inventory</title>
 <meta name="theme-color" content="#0B5E50">
 <link rel="manifest" href="manifest.webmanifest">
@@ -150,6 +150,11 @@ input.talking,textarea.talking{border-color:var(--accent);box-shadow:0 0 0 4px v
 #mic .live{min-height:28px;font-size:19px;color:var(--ink-2);font-style:italic}
 #mic .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 #mic .row2 .btn{min-height:60px}
+#mic .card.compact{flex-direction:row;align-items:stretch;gap:10px;padding:10px}
+#mic .card.compact .talk{flex:1;min-width:0;min-height:72px;font-size:22px;border-radius:16px;padding:6px 14px;justify-content:flex-start;text-align:left}
+#mic .card.compact .talk .lines{display:flex;flex-direction:column;min-width:0}
+#mic .card.compact .talk small{font-size:16px;font-weight:400;opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#mic .card.compact .hide{flex:none;min-height:72px;min-width:84px;padding:0 14px;font-size:19px}
 #micTab{position:fixed;right:calc(8px + env(safe-area-inset-right,0px));top:45%;z-index:40;min-height:64px;padding:0 16px;border-radius:16px;border:3px solid var(--accent);background:var(--surface);color:var(--accent);font-weight:700;font-size:19px;box-shadow:var(--shadow);cursor:pointer}
 
 /* sheet */
@@ -314,7 +319,7 @@ function newDraft(keep){
  if(keep){for(const k of ['cat','sub','origin','locB','loc'])d[k]=keep[k];d.cols=[...keep.cols];}
  return d;
 }
-function go(s){if(mic.listening)stopMic();closeMic();screen=s;addingX=addingCat=addingSub=addingCol=false;render(true);}
+function go(s){if(mic.listening)stopMic();closeMic();mic.typeKey=null;screen=s;addingX=addingCat=addingSub=addingCol=false;render(true);}
 
 /* ---------- render ---------- */
 function render(top){
@@ -534,7 +539,7 @@ function vSettings(){
   </div>
   <div class="section">
    <div class="label">ABOUT THIS APP</div>
-   <p><b>Version: Test 001</b></p>
+   <p><b>Version: Test 002</b></p>
    <p>Everything you add is saved on this phone and works without internet. Use “Send today's work” to send a copy off the phone.</p>
    <p class="hint">Photos and talking work once the phone allows the camera and microphone. Google Lens opens from the share menu.</p>
   </div>
@@ -666,7 +671,7 @@ document.addEventListener('click',e=>{
   case 'sheetyes':{const f=sheetYes;closeSheet();if(f)f();break;}
   case 'sheetno':closeSheet();break;
   case 'export':csvFallback='';go('export');break;
-  case 'dljson':{const items=todayItems();const data=JSON.stringify({made:new Date().toISOString(),by:S.worker?S.worker.letter:'',app:'store-inventory',version:'test-001',items},null,1);saveFile('inventory-'+stamp()+'-'+(S.worker?S.worker.letter:'X')+'.json',data,null);break;}
+  case 'dljson':{const items=todayItems();const data=JSON.stringify({made:new Date().toISOString(),by:S.worker?S.worker.letter:'',app:'store-inventory',version:'test-002',items},null,1);saveFile('inventory-'+stamp()+'-'+(S.worker?S.worker.letter:'X')+'.json',data,null);break;}
   case 'dlcsv':{const c=csvOf(todayItems());saveFile('inventory-'+stamp()+'-'+(S.worker?S.worker.letter:'X')+'.csv',c,c);break;}
   case 'copycsv':{const ta=$('#f-csvout');const done=()=>toast('Copied');
    try{navigator.clipboard.writeText(csvFallback).then(done,()=>{ta.select();toast('Selected. Use Copy from the menu.');});}catch(err){ta.select();}break;}
@@ -677,6 +682,7 @@ document.addEventListener('click',e=>{
    else{window.open('https://lens.google.com/','_blank','noopener');toast("This phone can't pass the photo along, so Lens opened by itself.");}break;}
   case 'mictalk':toggleTalk();break;
   case 'micdone':{if(mic.listening)stopMic();const fe=fieldEl();if(fe)fe.blur();closeMic();break;}
+  case 'mictype':{if(mic.listening)stopMic();const fe=fieldEl();mic.typeKey=mic.key;closeMic();if(fe){fe.focus();try{const n=fe.value.length;fe.setSelectionRange(n,n);}catch(err){}fe.scrollIntoView({block:'center'});}break;}
   case 'micaside':mic.collapsed=true;renderMic();break;
   case 'micshow':mic.collapsed=false;renderMic();break;
  }
@@ -708,7 +714,7 @@ document.addEventListener('keydown',e=>{
 });
 
 /* ---------- mic panel ---------- */
-const mic={key:null,label:'',listening:false,engine:null,base:'',committed:'',collapsed:false,rec:null,note:'',live:''};
+const mic={key:null,label:'',listening:false,engine:null,base:'',committed:'',collapsed:false,compact:false,typeKey:null,rec:null,note:'',live:''};
 let dict=null,dictTried=false,dictBad=false;
 function initDict(){
  if(dictTried)return;dictTried=true;
@@ -726,11 +732,12 @@ function initDict(){
 function join(a,b){if(!b)return a;if(!a)return b.replace(/^\s+/,'');if(/\s$/.test(a))return a+b.replace(/^\s+/,'');if(/^\s/.test(b))return a+b;return a+' '+b;}
 function fieldEl(){return mic.key?document.querySelector('[data-key="'+mic.key.replace(/"/g,'\\"')+'"]'):null;}
 function setField(v){const el=fieldEl();if(!el)return;el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}));if(el.tagName==='TEXTAREA')el.scrollTop=el.scrollHeight;}
-function openMic(key,label){initDict();if(mic.key!==key&&mic.listening)stopMic();const old=fieldEl();if(old)old.classList.remove('talking');mic.key=key;mic.label=label;mic.collapsed=false;mic.note='';renderMic();}
-function closeMic(){const el=fieldEl();if(el)el.classList.remove('talking');mic.key=null;$('#mic').hidden=true;$('#micTab').hidden=true;}
+function openMic(key,label){initDict();if(mic.listening)stopMic();const old=fieldEl();if(old)old.classList.remove('talking');mic.key=key;mic.label=label;mic.collapsed=false;mic.compact=true;mic.note='';renderMic();}
+function closeMic(){const el=fieldEl();if(el)el.classList.remove('talking');mic.key=null;mic.compact=false;$('#mic').hidden=true;$('#micTab').hidden=true;$('#app').style.paddingBottom='';}
 function SR(){return window.SpeechRecognition||window.webkitSpeechRecognition;}
 function toggleTalk(){if(mic.listening){stopMic();return;}startMic();}
 function startMic(){
+ mic.compact=false;
  const el=fieldEl();mic.base=el?el.value:'';mic.committed=mic.base;mic.note='';mic.live='';
  if(dict&&!dictBad){
   mic.engine='claude';
@@ -748,7 +755,7 @@ function startMic(){
    r.start();mic.listening=true;}
   catch(e){mic.listening=false;mic.note='Talking isn’t available on this phone. You can type in the box for now.';}
  }else{mic.note='Talking isn’t available on this phone. You can type in the box for now.';}
- if(mic.listening&&el){el.blur();el.classList.add('talking');el.scrollIntoView({block:'center',behavior:'smooth'});}
+ if(mic.listening&&el){el.blur();el.classList.add('talking');}
  renderMic();
 }
 function stopMic(){mic.listening=false;if(mic.engine==='claude'&&dict){dict.stop().catch(()=>{});}else if(mic.rec){try{mic.rec.stop()}catch(e){}}const el=fieldEl();if(el)el.classList.remove('talking');mic.live='';renderMic();}
@@ -758,19 +765,37 @@ function renderMic(){
  if(!mic.key){p.hidden=true;tab.hidden=true;return;}
  if(mic.collapsed){p.hidden=true;tab.hidden=false;tab.textContent=mic.listening?'Listening…':'Talk';return;}
  tab.hidden=true;p.hidden=false;
+ if(mic.compact&&!mic.listening){
+  p.innerHTML=`<div class="card compact" role="region" aria-label="Talk to type"><button class="talk" data-act="mictalk"><span class="dot"></span><span class="lines">Tap to talk<small>into: ${esc(mic.label)}</small></span></button><button class="btn hide" data-act="mictype">Type instead</button></div>`;
+  place();keepClear();return;
+ }
  p.innerHTML=`<div class="card" role="region" aria-label="Talk to type">
   <div class="into">Speaking into:<b>${esc(mic.label)}</b></div>
   <button class="talk ${mic.listening?'on':''}" data-act="mictalk"><span class="dot"></span>${mic.listening?'Listening. Tap to stop':'Tap to talk'}</button>
   <div class="live" id="micLive" aria-live="polite">${mic.live?esc('“'+mic.live+'”'):(mic.listening?'Listening…':'')}</div>
   ${mic.note?`<div class="notice">${esc(mic.note)}</div>`:''}
+  <button class="btn" data-act="mictype">Type instead</button>
   <div class="row2"><button class="btn" data-act="micaside">Move aside</button><button class="btn primary" data-act="micdone">Done</button></div>
  </div>`;
- place();
+ place();keepClear();
  const el=fieldEl();if(el)el.classList.toggle('talking',mic.listening);
 }
+/* The panel must never cover the field it speaks into: make room under the page and scroll the field above the panel. */
+function keepClear(){
+ const p=$('#mic');if(p.hidden){$('#app').style.paddingBottom='';return;}
+ const card=p.querySelector('.card');const el=fieldEl();if(!card)return;
+ const ch=card.getBoundingClientRect().height;$('#app').style.paddingBottom=Math.max(140,ch+40)+'px';
+ if(!el)return;
+ requestAnimationFrame(()=>{const top=card.getBoundingClientRect().top,r=el.getBoundingClientRect();
+  const gap=16;if(r.bottom>top-gap)window.scrollBy(0,r.bottom-top+gap);
+  else{const hdr=document.querySelector('.top');const hb=hdr?hdr.getBoundingClientRect().bottom:0;if(r.top<hb+8)window.scrollBy(0,r.top-hb-8);}});
+}
+
 function place(){const p=$('#mic');const vv=window.visualViewport;const off=vv?Math.max(0,window.innerHeight-vv.height-vv.offsetTop):0;p.style.bottom=off+'px';}
-if(window.visualViewport){visualViewport.addEventListener('resize',place);visualViewport.addEventListener('scroll',place);}
-document.addEventListener('focusin',e=>{const el=e.target;if(el.dataset&&el.dataset.speak){openMic(el.dataset.key,el.dataset.speak);}});
+let clearT=null;function settle(){place();clearTimeout(clearT);clearT=setTimeout(keepClear,120);}
+if(window.visualViewport){visualViewport.addEventListener('resize',settle);visualViewport.addEventListener('scroll',place);}
+window.addEventListener('resize',settle);
+document.addEventListener('focusin',e=>{const el=e.target;if(el.dataset&&el.dataset.speak){if(mic.typeKey===el.dataset.key)return;mic.typeKey=null;openMic(el.dataset.key,el.dataset.speak);}});
 /* keep the panel's button taps from stealing the field before we read it */
 $('#mic').addEventListener('pointerdown',e=>{if(e.target.closest('button'))e.preventDefault();});
 
