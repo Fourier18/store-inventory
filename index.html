@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Install Store Inventory</title>
+<meta name="theme-color" content="#0B5E50">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<script>
+/* Already installed and opened from the home screen: go straight to the app. */
+if (matchMedia('(display-mode: standalone)').matches || navigator.standalone) location.replace('app.html');
+</script>
+<style>
+:root{--bg:#EEF1EF;--surface:#FFFFFF;--ink:#101916;--ink-2:#44524C;--line:#BFCAC4;--accent:#0B5E50;--accent-ink:#FFFFFF;--accent-soft:#D3EAE3;--focus:#D99A00;
+  --f-body:"Atkinson Hyperlegible","Segoe UI",Roboto,Arial,sans-serif}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0E1412;--surface:#18211E;--ink:#EEF4F1;--ink-2:#AFBDB7;--line:#3A4843;--accent:#4CC7AE;--accent-ink:#06201A;--accent-soft:#173B34;--focus:#FFC83D;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0E1412;--surface:#18211E;--ink:#EEF4F1;--ink-2:#AFBDB7;--line:#3A4843;--accent:#4CC7AE;--accent-ink:#06201A;--accent-soft:#173B34;--focus:#FFC83D;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:22px;line-height:1.45}
+main{max-width:600px;margin:0 auto;padding:28px max(16px,env(safe-area-inset-right,0px)) calc(40px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:22px}
+.brand{display:flex;align-items:center;gap:16px}
+.brand img{width:76px;height:76px;border-radius:18px;flex:none}
+h1{font-size:34px;line-height:1.15;margin:0}
+h2{font-size:26px;margin:0}
+p{margin:0}
+.lead{font-size:24px}
+.btn{display:flex;align-items:center;justify-content:center;min-height:96px;padding:12px 20px;border-radius:22px;border:3px solid var(--accent);background:var(--accent);color:var(--accent-ink);font:inherit;font-size:28px;font-weight:700;cursor:pointer;text-decoration:none;text-align:center;width:100%}
+.btn.plain{background:var(--surface);color:var(--ink);border-color:var(--line);min-height:72px;font-size:22px}
+.btn:focus-visible,a:focus-visible{outline:4px solid var(--focus);outline-offset:3px}
+.card{background:var(--surface);border:2px solid var(--line);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:16px}
+ol{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:14px;font-size:26px}
+ol b{white-space:nowrap}
+.dots{display:inline-flex;align-items:center;justify-content:center;width:1.5em;height:1.5em;border:2px solid var(--ink);border-radius:8px;font-weight:700;line-height:1}
+.ok{background:var(--accent-soft);border-radius:18px;padding:18px;font-size:24px;font-weight:700}
+.hint{color:var(--ink-2);font-size:20px}
+[hidden]{display:none!important}
+</style>
+</head><body>
+<main>
+  <div class="brand"><img src="icons/icon-192.png" alt=""><h1>Store Inventory</h1></div>
+  <p class="lead">Put the app on this phone. After that it works without internet, and everything stays on the phone.</p>
+
+  <button id="install" class="btn" hidden>Install the app</button>
+  <div id="done" class="ok" hidden>It's on your home screen now. Look for the green <b>Inventory</b> icon.</div>
+
+  <section class="card" id="steps">
+    <h2 id="stepsTitle">Install it in 3 steps</h2>
+    <ol>
+      <li>Tap the <span class="dots" aria-label="three dots">⋮</span> at the top right of Chrome.</li>
+      <li>Tap <b>Add to home screen</b>. Some phones say <b>Install app</b>.</li>
+      <li>Tap <b>Install</b>.</li>
+    </ol>
+    <p class="hint">Then find the green <b>Inventory</b> icon on your home screen and tap it.</p>
+    <p class="hint">Use Chrome. If this page opened inside another app, tap <span class="dots" aria-hidden="true">⋮</span> and pick <b>Open in Chrome</b> first.</p>
+  </section>
+
+  <a class="btn plain" href="app.html">Open the app without installing</a>
+</main>
+<script>
+let promptEvt = null;
+const btn = document.getElementById('install'), done = document.getElementById('done'), title = document.getElementById('stepsTitle');
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); promptEvt = e; btn.hidden = false;
+  title.textContent = "If the button doesn't work";
+});
+btn.addEventListener('click', async () => {
+  if (!promptEvt) return;
+  promptEvt.prompt();
+  try { await promptEvt.userChoice; } catch (e) {}
+  promptEvt = null; btn.hidden = true;
+});
+window.addEventListener('appinstalled', () => { btn.hidden = true; done.hidden = false; });
+if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+</script>
+</body></html>
