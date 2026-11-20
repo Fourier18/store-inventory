@@ -243,15 +243,16 @@ function openDb(){return new Promise((res,rej)=>{let r;try{r=indexedDB.open('sto
 function reqP(r){return new Promise((res,rej)=>{r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
 let S=fresh();
 function fresh(){
- const now=Date.now(), day=86400000;
- const ex=[
-  {t:now-day*1+3600e3,cat:'MED',sub:'REC',origin:'SB',w:'D',n:1,title:'Miles Davis, Kind of Blue',cond:'Good',locB:'SB',loc:'Bin 4',status:'ready',fields:{artist:'Miles Davis',label:'Columbia',format:'LP',speed:'33⅓',sleeve:'Acceptable'},notes:'Original sleeve, small seam split on top. Plays clean.',cols:['Jazz LPs']},
-  {t:now-day*1+7200e3,cat:'MUS',sub:'GTR',origin:'BB',w:'J',n:1,title:'Fender Stratocaster, sunburst',cond:'Very good',locB:'BB',loc:'Loft, left wall',status:'photo',fields:{brand:'Fender',model:'Stratocaster',case:'Hard case'},notes:'Check serial on the neck plate.',cols:[]},
-  {t:now-day*2,cat:'TOY',sub:'FIG',origin:'SB',w:'D',n:1,title:'Hummel figurine, girl with basket',cond:'Excellent',locB:'SB',loc:'Glass case 2',status:'listed',fields:{maker:'Hummel'},notes:'',cols:['Front window']}
- ];
- const counters={},items=ex.map(e=>{const k=[e.cat,e.sub,e.origin,e.w].join('-');counters[k]=e.n;
-  return {id:ulid(e.t),sku:k+'-'+String(e.n).padStart(4,'0'),cat:e.cat,sub:e.sub,origin:e.origin,worker:e.w,title:e.title,cond:e.cond,qty:1,locB:e.locB,loc:e.loc,cols:e.cols,notes:e.notes,status:e.status,photos:[],fields:e.fields,extra:[],created:e.t,updated:e.t,history:[{t:e.t,w:e.w,what:'Created'}],example:true};});
- return {v:1,worker:null,lastOrigin:'BB',customCats:[],customSubs:{},counters,collections:['Jazz LPs','Front window'],items,storageNote:false};
+ return {v:1,worker:null,lastOrigin:'BB',customCats:[],customSubs:{},counters:{},collections:[],items:[],storageNote:false};
+}
+/* Test 001/002 seeded three sample items (marked example:true) and two sample collections. Remove only those. */
+function dropSamples(){
+ const had=S.items.some(i=>i.example);if(!had)return false;
+ S.items=S.items.filter(i=>!i.example);
+ const used=new Set();for(const i of S.items)for(const c of (i.cols||[]))used.add(c);
+ S.collections=(S.collections||[]).filter(c=>!(['Jazz LPs','Front window'].includes(c)&&!used.has(c)));
+ for(const k of ['MED-REC-SB-D','MUS-GTR-BB-J','TOY-FIG-SB-D']){if(S.counters[k]===1&&!S.items.some(i=>i.sku&&i.sku.startsWith(k+'-')))delete S.counters[k];}
+ return true;
 }
 /* Everything lives on the phone in IndexedDB: one record for settings, one per item. */
 async function load(){
@@ -539,7 +540,7 @@ function vSettings(){
   </div>
   <div class="section">
    <div class="label">ABOUT THIS APP</div>
-   <p><b>Version: Test 002</b></p>
+   <p><b>Version: Test 003</b></p>
    <p>Everything you add is saved on this phone and works without internet. Use “Send today's work” to send a copy off the phone.</p>
    <p class="hint">Photos and talking work once the phone allows the camera and microphone. Google Lens opens from the share menu.</p>
   </div>
@@ -671,7 +672,7 @@ document.addEventListener('click',e=>{
   case 'sheetyes':{const f=sheetYes;closeSheet();if(f)f();break;}
   case 'sheetno':closeSheet();break;
   case 'export':csvFallback='';go('export');break;
-  case 'dljson':{const items=todayItems();const data=JSON.stringify({made:new Date().toISOString(),by:S.worker?S.worker.letter:'',app:'store-inventory',version:'test-002',items},null,1);saveFile('inventory-'+stamp()+'-'+(S.worker?S.worker.letter:'X')+'.json',data,null);break;}
+  case 'dljson':{const items=todayItems();const data=JSON.stringify({made:new Date().toISOString(),by:S.worker?S.worker.letter:'',app:'store-inventory',version:'test-003',items},null,1);saveFile('inventory-'+stamp()+'-'+(S.worker?S.worker.letter:'X')+'.json',data,null);break;}
   case 'dlcsv':{const c=csvOf(todayItems());saveFile('inventory-'+stamp()+'-'+(S.worker?S.worker.letter:'X')+'.csv',c,c);break;}
   case 'copycsv':{const ta=$('#f-csvout');const done=()=>toast('Copied');
    try{navigator.clipboard.writeText(csvFallback).then(done,()=>{ta.select();toast('Selected. Use Copy from the menu.');});}catch(err){ta.select();}break;}
@@ -802,7 +803,7 @@ $('#mic').addEventListener('pointerdown',e=>{if(e.target.closest('button'))e.pre
 initDict();setTimeout(initDict,1200);
 (async function boot(){
  try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});}catch(e){}
- S=await load();screen=S.worker?'home':'setup';render(true);
+ S=await load();if(dropSamples())persist();screen=S.worker?'home':'setup';render(true);
 })();
 })();
 </script>
