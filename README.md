@@ -1,16 +1,26 @@
 # Store Inventory
 
-A phone app for walking through a store once and building a raw digital archive of every item: photo, category, condition, location, notes and a printed SKU label. It installs from the browser (a Progressive Web App), works offline, and keeps all data on the phone.
+**Install the app: https://fourier18.github.io/store-inventory/**
 
-**Install:** open the GitHub Pages link for this repo in Chrome on Android and tap **Install the app** (or ⋮ → Add to home screen).
+Version: Test 001
+
+A phone app for walking through a store once and building a digital archive of every item: photo, category, condition, location, notes and a printed SKU label. It works offline and keeps all data on the phone. No account needed.
+
+## Install on Android
+1. Open **https://fourier18.github.io/store-inventory/** in Chrome.
+2. Tap **Install the app**.
+3. If there's no button: tap **⋮** (top right) → **Add to home screen** (or **Install app**) → **Install**.
+4. Open the green **Inventory** icon on the home screen.
+
+To use it without installing: https://fourier18.github.io/store-inventory/app.html
 
 ## Files
-- `index.html` — install page with a big Install button and large-print fallback steps
-- `app.html` — the app itself
-- `manifest.webmanifest`, `icons/` — what makes it installable
-- `sw.js` — service worker that keeps the app's files on the phone for offline use
+- `index.html`: install page with a big Install button and large-print fallback steps
+- `app.html`: the app itself
+- `manifest.webmanifest`, `icons/`: what makes it installable
+- `sw.js`: service worker that keeps the app's files on the phone for offline use
 
 ## Data
-Items are stored in the phone's IndexedDB (one record per item, photos compressed to about 1280 px JPEG). Nothing is sent anywhere unless you use **Send today's work**, which shares a CSV through the share sheet or saves a JSON file with photos to Downloads.
+Items are stored in the phone's IndexedDB (one record per item, photos compressed to about 1280 px JPEG). Nothing leaves the phone unless you use **Send today's work**, which shares a CSV through the share sheet or saves a JSON file with photos to Downloads.
 
 Each item has a hidden permanent ID (ULID, which encodes the creation time) and a regenerable SKU label: `CATEGORY-SUBCATEGORY-ORIGIN-WORKER-NUMBER`, e.g. `MED-REC-BB-D-0001`.
