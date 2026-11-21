@@ -2,7 +2,7 @@
 
 **Install the app: https://fourier18.github.io/store-inventory/**
 
-Version: Test 003
+Version: Test 004
 
 A phone app for walking through a store once and building a digital archive of every item: photo, category, condition, location, notes and a printed SKU label. It works offline and keeps all data on the phone. No account needed.
 
@@ -15,6 +15,7 @@ A phone app for walking through a store once and building a digital archive of e
 To use it without installing: https://fourier18.github.io/store-inventory/app.html
 
 ## Changelog
+- **Test 004**: The big Save item bar is gone. Saving is a small round **Save** button in the top-right of the header, so the form keeps the space above the keyboard. Text fields ask Chrome not to offer autofill.
 - **Test 003**: Starts blank. The three sample items and two sample collections are gone, and phones that ran Test 001 or 002 remove them on first open. Items you made yourself are kept. Category and subcategory presets stay.
 - **Test 002**: The talk panel no longer covers the field you're typing in. Tapping a field shows a slim "Tap to talk" bar above the keyboard, and the field scrolls into view above it. Added a big **Type instead** button that closes the panel and puts the cursor in the field.
 - **Test 001**: First standalone build. Install page, offline support, items saved on the phone.
