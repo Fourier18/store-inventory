@@ -2,7 +2,7 @@
 
 **Install the app: https://fourier18.github.io/store-inventory/**
 
-Version: Test 007
+Version: Test 008
 
 A phone app for walking through a store once and building a digital archive of every item: photo, category, condition, location, notes and a printed SKU label. It works offline and keeps all data on the phone. No account needed.
 
@@ -15,6 +15,7 @@ A phone app for walking through a store once and building a digital archive of e
 To use it without installing: https://fourier18.github.io/store-inventory/app.html
 
 ## Changelog
+- **Test 008**: "Print tag" button on the Saved screen and on every saved item. The tag has a QR code of the item's permanent ID, the label (SKU) and the title. Prints through the phone's print screen to any printer, or saves/shares the tag as a picture. Label sizes: 2 × 1 in, 50 × 30 mm, 2¼ × 1¼ in, and a 2 × 3½ in hang tag with room for a string hole. The QR code is made on the phone, no internet needed.
 - **Test 007**: "Send today's work" now makes one report page (inventory-D-2026-11-20.html) with every item, its photos (tap to enlarge), search and filters, plus Download spreadsheet and Download photos buttons. The page also carries the full data for the future master inventory. The separate JSON file is gone; the spreadsheet is still there.
 - **Test 006**: Every typing box is now a plain text area instead of a form field, so Chrome's autofill strip (key, card and pin icons) shouldn't appear above the keyboard. Gboard's own toolbar and mic are unchanged.
 - **Test 005**: Words no longer break in the middle (the label box said "m / ake"). The app now picks up a new version the first time you reopen it.
