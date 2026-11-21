@@ -2,7 +2,7 @@
 
 **Install the app: https://fourier18.github.io/store-inventory/**
 
-Version: Test 005
+Version: Test 006
 
 A phone app for walking through a store once and building a digital archive of every item: photo, category, condition, location, notes and a printed SKU label. It works offline and keeps all data on the phone. No account needed.
 
@@ -15,6 +15,7 @@ A phone app for walking through a store once and building a digital archive of e
 To use it without installing: https://fourier18.github.io/store-inventory/app.html
 
 ## Changelog
+- **Test 006**: Every typing box is now a plain text area instead of a form field, so Chrome's autofill strip (key, card and pin icons) shouldn't appear above the keyboard. Gboard's own toolbar and mic are unchanged.
 - **Test 005**: Words no longer break in the middle (the label box said "m / ake"). The app now picks up a new version the first time you reopen it.
 - **Test 004**: The big Save item bar is gone. Saving is a small round **Save** button in the top-right of the header, so the form keeps the space above the keyboard. Text fields ask Chrome not to offer autofill.
 - **Test 003**: Starts blank. The three sample items and two sample collections are gone, and phones that ran Test 001 or 002 remove them on first open. Items you made yourself are kept. Category and subcategory presets stay.

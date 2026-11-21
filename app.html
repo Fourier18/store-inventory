@@ -77,11 +77,15 @@ button,input,textarea,select{font:inherit;color:inherit}
 /* inputs */
 .field{display:flex;flex-direction:column;gap:6px}
 .field>span{font-weight:700;font-size:18px}
-input[type=text],input[type=search],textarea{width:100%;min-height:60px;padding:12px 14px;border-radius:14px;border:2px solid var(--line);background:var(--surface);font-size:21px}
+input[type=text],input[type=search],textarea,.ed{width:100%;min-height:60px;padding:12px 14px;border-radius:14px;border:2px solid var(--line);background:var(--surface);font-size:21px}
+.ed{display:block;position:relative;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;cursor:text;outline:none}
+.ed:focus{border-color:var(--accent)}
+.ed.multi{min-height:120px}
+.ed.blank::before{content:attr(data-ph);position:absolute;left:16px;top:14px;right:16px;color:var(--ink-2);opacity:.75;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 textarea{min-height:120px;resize:vertical}
-input.talking,textarea.talking{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+input.talking,textarea.talking,.ed.talking{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
 .inline{display:flex;gap:10px}
-.inline>input{flex:1;min-width:0}
+.inline>input,.inline>.ed{flex:1;min-width:0}
 .inline>.btn{flex:none}
 
 /* kraft tag */
@@ -328,6 +332,7 @@ function render(top){
  const y=window.scrollY;
  const app=$('#app');
  app.innerHTML=({setup:vSetup,home:vHome,edit:vEdit,cat:vCat,sub:vSub,saved:vSaved,settings:vSettings,export:vExport})[screen]();
+ upgradeFields(app);
  if(top)window.scrollTo(0,0);else window.scrollTo(0,y);
  if(mic.key){const el=fieldEl();if(el&&mic.listening)el.classList.add('talking');}
 }
@@ -541,7 +546,7 @@ function vSettings(){
   </div>
   <div class="section">
    <div class="label">ABOUT THIS APP</div>
-   <p><b>Version: Test 005</b></p>
+   <p><b>Version: Test 006</b></p>
    <p>Everything you add is saved on this phone and works without internet. Use “Send today's work” to send a copy off the phone.</p>
    <p class="hint">Photos and talking work once the phone allows the camera and microphone. Google Lens opens from the share menu.</p>
   </div>
@@ -673,7 +678,7 @@ document.addEventListener('click',e=>{
   case 'sheetyes':{const f=sheetYes;closeSheet();if(f)f();break;}
   case 'sheetno':closeSheet();break;
   case 'export':csvFallback='';go('export');break;
-  case 'dljson':{const items=todayItems();const data=JSON.stringify({made:new Date().toISOString(),by:S.worker?S.worker.letter:'',app:'store-inventory',version:'test-005',items},null,1);saveFile('inventory-'+stamp()+'-'+(S.worker?S.worker.letter:'X')+'.json',data,null);break;}
+  case 'dljson':{const items=todayItems();const data=JSON.stringify({made:new Date().toISOString(),by:S.worker?S.worker.letter:'',app:'store-inventory',version:'test-006',items},null,1);saveFile('inventory-'+stamp()+'-'+(S.worker?S.worker.letter:'X')+'.json',data,null);break;}
   case 'dlcsv':{const c=csvOf(todayItems());saveFile('inventory-'+stamp()+'-'+(S.worker?S.worker.letter:'X')+'.csv',c,c);break;}
   case 'copycsv':{const ta=$('#f-csvout');const done=()=>toast('Copied');
    try{navigator.clipboard.writeText(csvFallback).then(done,()=>{ta.select();toast('Selected. Use Copy from the menu.');});}catch(err){ta.select();}break;}
@@ -689,6 +694,34 @@ document.addEventListener('click',e=>{
   case 'micshow':mic.collapsed=false;renderMic();break;
  }
 });
+
+/* ---------- typing boxes ----------
+ Every text box is a plain editable block rather than a form field. Chrome only offers its
+ autofill strip (key, card and pin icons) for form fields, so these never trigger it.
+ Gboard and its own toolbar, mic included, work as usual. Each box keeps a .value like an input. */
+function caretEnd(el){try{const r=document.createRange();r.selectNodeContents(el);r.collapse(false);const s=getSelection();s.removeAllRanges();s.addRange(r);}catch(e){}}
+function makeEd(src){
+ const multi=src.tagName==='TEXTAREA';const d=document.createElement('div');
+ d.className='ed'+(multi?' multi':'');
+ try{d.contentEditable='plaintext-only';}catch(e){d.contentEditable='true';}
+ if(d.contentEditable!=='plaintext-only')d.contentEditable='true';
+ d.setAttribute('role','textbox');if(multi)d.setAttribute('aria-multiline','true');
+ for(const a of ['id','style','autocapitalize','spellcheck'])if(src.hasAttribute(a))d.setAttribute(a,src.getAttribute(a));
+ for(const [k,v] of Object.entries(src.dataset))d.dataset[k]=v;
+ const lab=src.closest('label.field,.field');const ls=lab&&lab.querySelector('span');
+ d.setAttribute('aria-label',(ls&&ls.textContent)||src.getAttribute('placeholder')||'Text');
+ if(src.placeholder)d.dataset.ph=src.placeholder;
+ const max=+src.getAttribute('maxlength')||0;
+ Object.defineProperty(d,'value',{get(){let t=d.innerText||'';if(d.lastChild&&d.lastChild.nodeName==='BR')t=t.replace(/\n$/,'');if(t==='\n')t='';if(!multi)t=t.replace(/\n/g,' ');return t;},
+  set(v){v=String(v==null?'':v);if(max)v=v.slice(0,max);d.textContent=v;d.classList.toggle('blank',!v);if(document.activeElement===d)caretEnd(d);}});
+ d.setSelectionRange=()=>caretEnd(d);
+ d.addEventListener('input',()=>{if(max&&d.value.length>max)d.value=d.value.slice(0,max);d.classList.toggle('blank',!d.value);},true);
+ d.addEventListener('keydown',e=>{if(e.key==='Enter'&&!multi){e.preventDefault();}},true);
+ d.value=multi?src.value:src.getAttribute('value')||src.value||'';
+ src.replaceWith(d);return d;
+}
+function upgradeFields(root){root.querySelectorAll('input[type=text],input[type=search],textarea:not([readonly])').forEach(makeEd);}
+document.addEventListener('click',e=>{const lab=e.target.closest&&e.target.closest('label.field');if(!lab||e.target.closest('.ed'))return;const ed=lab.querySelector('.ed');if(ed){e.preventDefault();ed.focus();caretEnd(ed);}});
 
 /* ---------- typing ---------- */
 document.addEventListener('input',e=>{
@@ -733,7 +766,7 @@ function initDict(){
 }
 function join(a,b){if(!b)return a;if(!a)return b.replace(/^\s+/,'');if(/\s$/.test(a))return a+b.replace(/^\s+/,'');if(/^\s/.test(b))return a+b;return a+' '+b;}
 function fieldEl(){return mic.key?document.querySelector('[data-key="'+mic.key.replace(/"/g,'\\"')+'"]'):null;}
-function setField(v){const el=fieldEl();if(!el)return;el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}));if(el.tagName==='TEXTAREA')el.scrollTop=el.scrollHeight;}
+function setField(v){const el=fieldEl();if(!el)return;el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}));if(el.tagName==='TEXTAREA'||el.classList.contains('multi'))el.scrollTop=el.scrollHeight;}
 function openMic(key,label){initDict();if(mic.listening)stopMic();const old=fieldEl();if(old)old.classList.remove('talking');mic.key=key;mic.label=label;mic.collapsed=false;mic.compact=true;mic.note='';renderMic();}
 function closeMic(){const el=fieldEl();if(el)el.classList.remove('talking');mic.key=null;mic.compact=false;$('#mic').hidden=true;$('#micTab').hidden=true;$('#app').style.paddingBottom='';}
 function SR(){return window.SpeechRecognition||window.webkitSpeechRecognition;}
