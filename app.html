@@ -2979,21 +2979,21 @@ function tagCanvas(it,key,dpi){
  const Q=qrMatrix(it.id);
  function drawQr(x,y,size){const px=Math.floor(size/Q.n);const off=Math.floor((size-px*Q.n)/2);for(let r=0;r<Q.n;r++)for(let cc=0;cc<Q.n;cc++)if(Q.dark(r,cc))ctx.fillRect(x+off+cc*px,y+off+r*px,px,px);}
  const sku=it.sku||'';const title=it.title||'';
- function textBlock(x,y,w,h,center){
-  const sk=skuLines(ctx,sku,mono,w,Math.min(h*0.3,dpi*0.2),Math.round(dpi*0.105));
+ function textBlock(x,y,w,h,center,o){
+  const sk=skuLines(ctx,sku,mono,w,Math.min(h*0.3,dpi*o.skuMax),Math.round(dpi*o.skuMin));
   const lh=Math.round(sk.px*1.12);
-  ctx.font=body(10);let tp=Math.round(Math.min(sk.px*0.72,dpi*0.12));ctx.font=body(tp);
-  let tl=title?wrapLines(ctx,title,w,2):[];const tlh=Math.round(tp*1.18);
+  let tp=Math.round(Math.min(sk.px*0.72,dpi*o.titleMax));ctx.font=body(tp);
+  let tl=title?wrapLines(ctx,title,w,o.lines):[];const tlh=Math.round(tp*1.18);
   const gap=tl.length?Math.round(sk.px*0.35):0;
   let total=sk.lines.length*lh+gap+tl.length*tlh;
-  if(total>h&&tl.length===2){tl=wrapLines(ctx,title,w,1);total=sk.lines.length*lh+gap+tlh;}
+  while(total>h&&tl.length>1){tl=wrapLines(ctx,title,w,tl.length-1);total=sk.lines.length*lh+gap+tl.length*tlh;}
   if(total>h&&tl.length){tl=[];total=sk.lines.length*lh;}
   let yy=y+Math.max(0,(h-total)/2);ctx.textAlign=center?'center':'left';const xx=center?x+w/2:x;
   ctx.font=mono(sk.px);for(const l of sk.lines){yy+=lh;ctx.fillText(l,xx,yy-Math.round(lh*0.18));}
   yy+=gap;ctx.font=body(tp);for(const l of tl){yy+=tlh;ctx.fillText(l,xx,yy-Math.round(tlh*0.2));}
  }
- if(W>=H){const q=H-2*m;drawQr(m,m,q);const x=m+q+Math.round(0.07*dpi);textBlock(x,m,W-x-m,H-2*m,false);}
- else{const hole=t.hole?Math.round(0.6*dpi):0;const q=Math.min(W-2*m,Math.round((H-hole-2*m)*0.58));drawQr(Math.round((W-q)/2),hole+m,q);const y=hole+m+q;textBlock(m,y,W-2*m,H-y-m,true);}
+ if(W>=H){const q=H-2*m;drawQr(m,m,q);const x=m+q+Math.round(0.07*dpi);textBlock(x,m,W-x-m,H-2*m,false,{skuMax:0.2,skuMin:0.105,titleMax:0.12,lines:2});}
+ else{const hole=t.hole?Math.round(0.6*dpi):0;const q=Math.min(W-2*m,Math.round((H-hole-2*m)*0.58));drawQr(Math.round((W-q)/2),hole+m,q);const y=hole+m+q;textBlock(m,y,W-2*m,H-y-m,true,{skuMax:0.3,skuMin:0.2,titleMax:0.17,lines:3});}
  return c;
 }
 async function fontsReady(){try{await Promise.race([Promise.all([document.fonts.load('700 40px "Atkinson Hyperlegible Mono"'),document.fonts.load('400 40px "Atkinson Hyperlegible"')]),new Promise(r=>setTimeout(r,1500))]);}catch(e){}}
