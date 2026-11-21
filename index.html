@@ -59,7 +59,7 @@ ol b{white-space:nowrap}
   </section>
 
   <a class="btn plain" href="app.html">Open the app without installing</a>
-  <p class="hint">Version: Test 004</p>
+  <p class="hint">Version: Test 005</p>
 </main>
 <script>
 let promptEvt = null;
@@ -75,6 +75,6 @@ btn.addEventListener('click', async () => {
   promptEvt = null; btn.hidden = true;
 });
 window.addEventListener('appinstalled', () => { btn.hidden = true; done.hidden = false; });
-if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {}));
 </script>
 </body></html>

@@ -1,5 +1,5 @@
 /* Offline support: keeps the app's own files on the phone. Item data lives in IndexedDB, not here. */
-const VERSION = 'store-inventory-test-004';
+const VERSION = 'store-inventory-test-005';
 const SHELL = ['./', './index.html', './app.html', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png'];
 
@@ -20,7 +20,7 @@ self.addEventListener('fetch', e => {
   if (!sameOrigin && !isFont) return; // marketplace searches etc. go straight to the network
   if (sameOrigin && req.mode === 'navigate') {
     // Pages: try the network for updates, fall back to the saved copy offline.
-    e.respondWith(fetch(req).then(res => {
+    e.respondWith(fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }).then(res => {
       const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); return res;
     }).catch(() => caches.match(req, { ignoreSearch: true }).then(r => r || caches.match('./app.html'))));
     return;
