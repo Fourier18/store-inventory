@@ -3001,6 +3001,7 @@ function tagCanvas(it,key,dpi){
   let tl=title?wrapLines(ctx,title,w,o.lines):[];const tlh=Math.round(tp*1.18);
   const tot=()=>(pp?Math.round(pp*1.05)+g:0)+sk.lines.length*lh+(tl.length?g+tl.length*tlh:0);
   while(tot()>h&&tl.length>1)tl=wrapLines(ctx,title,w,tl.length-1);
+  while(tot()>h&&pp>Math.round(dpi*0.22))pp--;
   if(tot()>h&&tl.length)tl=[];
   while(tot()>h&&pp>Math.round(dpi*0.12))pp--;
   let yy=y+Math.max(0,(h-tot())/2);ctx.textAlign=center?'center':'left';const xx=center?x+w/2:x;
