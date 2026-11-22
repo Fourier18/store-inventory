@@ -165,6 +165,11 @@ input.talking,textarea.talking,.ed.talking{border-color:var(--accent);box-shadow
 #mic .card.compact .talk .lines{display:flex;flex-direction:column;min-width:0}
 #mic .card.compact .talk small{font-size:16px;font-weight:400;opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #mic .card.compact .hide{flex:none;min-height:72px;min-width:84px;padding:0 14px;font-size:19px}
+#mic .card.pill{flex-direction:row;align-items:stretch;gap:6px;padding:6px;margin:0 0 0 auto;width:max-content;max-width:none;border-width:2px;border-radius:20px}
+#mic .card.pill button{min-height:64px;min-width:88px;padding:4px 12px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:17px;font-weight:700;cursor:pointer}
+#mic .card.pill .talk{border:0}
+#mic .card.pill .typ{background:var(--surface-2,var(--surface));color:var(--ink);border:2px solid var(--line)}
+#mic .card.pill svg{width:28px;height:28px;flex:none}
 #micTab{position:fixed;right:calc(8px + env(safe-area-inset-right,0px));top:45%;z-index:40;min-height:64px;padding:0 16px;border-radius:16px;border:3px solid var(--accent);background:var(--surface);color:var(--accent);font-weight:700;font-size:19px;box-shadow:var(--shadow);cursor:pointer}
 
 /* sheet */
@@ -239,6 +244,7 @@ footer{color:var(--ink-2);font-size:13px;margin:24px 0 8px}
 (function(){
 var D=JSON.parse(document.getElementById('bundle-data').textContent);
 function $(s){return document.querySelector(s);}
+function fmtPrice(v){v=String(v==null?'':v).trim();if(/^\d+(\.\d{1,2})?$/.test(v))return '$'+v;return v;}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function day(t){return new Date(t).toLocaleDateString([], {year:'numeric',month:'short',day:'numeric'});}
 function when(t){return new Date(t).toLocaleString([], {year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
@@ -265,7 +271,7 @@ function draw(){
   var ph=p.length?'<button class="ph" data-i="'+idx+'" aria-label="Show photos"><img src="'+p[0].data+'" alt=""><span>'+p.length+'</span></button>':'<div class="ph">No photo</div>';
   var kept=(BN[i.locB]||i.locB||'')+(i.loc?', '+i.loc:'');
   return '<div class="card">'+ph+'<div><p class="t">'+esc(i.title||'(no name yet)')+'</p><span class="sku">'+esc(i.sku)+'</span><dl>'+
-   row('Kind',[i.catName,i.subName].filter(Boolean).join(' › '))+row('Status',i.statusLabel)+row('Condition',i.cond)+row('How many',i.qty)+
+   row('Kind',[i.catName,i.subName].filter(Boolean).join(' › '))+row('Status',i.statusLabel)+row('Condition',i.cond)+row('How many',i.qty)+row('Price',i.price?fmtPrice(i.price):'')+
    row('Made in',BN[i.origin]||i.origin)+row('Kept at',kept)+row('Collections',(i.cols||[]).join(', '))+
    details(i).map(function(d){return row(d[0],d[1]);}).join('')+row('Notes',i.notes)+row('Updated',when(i.updatedAt))+
    '<div class="id">ID '+esc(i.id)+'</div></dl></div></div>';}).join(''):'<div class="empty">Nothing matches.</div>';
@@ -2693,6 +2699,7 @@ function persist(){
 
 /* ---------- helpers ---------- */
 const $=s=>document.querySelector(s);
+function fmtPrice(v){v=String(v==null?'':v).trim();if(/^\d+(\.\d{1,2})?$/.test(v))return '$'+v;return v;}
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clone=o=>JSON.parse(JSON.stringify(o));
 function allCats(){return CATS.map(c=>({code:c.code,name:c.name,subs:c.subs.map(([code,name])=>({code,name})).concat((S.customSubs[c.code]||[]))})).concat(S.customCats.map(c=>({code:c.code,name:c.name,custom:true,subs:S.customSubs[c.code]||[]})));}
@@ -2727,7 +2734,7 @@ let tab='all', search='', draft=null, lastSaved=null, addingX=false, addingCat=f
 
 function newDraft(keep){
  const w=S.worker?S.worker.letter:'D';
- const d={id:null,sku:null,cat:'',sub:'',origin:S.lastOrigin||'BB',worker:w,title:'',cond:'',qty:1,locB:S.lastOrigin||'BB',loc:'',cols:[],notes:'',status:'photo',statusSet:false,photos:[],fields:{},extra:[],history:[],isNew:true,dirty:false};
+ const d={id:null,sku:null,cat:'',sub:'',origin:S.lastOrigin||'BB',worker:w,title:'',price:'',cond:'',qty:1,locB:S.lastOrigin||'BB',loc:'',cols:[],notes:'',status:'photo',statusSet:false,photos:[],fields:{},extra:[],history:[],isNew:true,dirty:false};
  if(keep){for(const k of ['cat','sub','origin','locB','loc'])d[k]=keep[k];d.cols=[...keep.cols];}
  return d;
 }
@@ -2781,7 +2788,7 @@ function vHome(){
 function rowHtml(i){
  const th=i.photos[0]?`<img src="${i.photos[0].thumb}" alt="">`:esc(i.cat||'?');
  const st=STATUS.find(s=>s[0]===i.status);
- return `<button class="row" data-act="open" data-id="${i.id}"><span class="thumb">${th}</span><span class="txt"><span class="t">${esc(i.title||'(no title yet)')}</span><span class="s">${esc(i.sku)}</span><span><span class="pill">${esc(st?st[1]:'')}</span>${i.qty>1?` <span class="pill">×${i.qty}</span>`:''}${i.example?' <span class="pill ex">Example</span>':''}</span></span></button>`;
+ return `<button class="row" data-act="open" data-id="${i.id}"><span class="thumb">${th}</span><span class="txt"><span class="t">${esc(i.title||'(no title yet)')}</span><span class="s">${esc(i.sku)}</span><span><span class="pill">${esc(st?st[1]:'')}</span>${i.price?` <span class="pill">${esc(fmtPrice(i.price))}</span>`:''}${i.qty>1?` <span class="pill">×${i.qty}</span>`:''}${i.example?' <span class="pill ex">Example</span>':''}</span></span></button>`;
 }
 
 function tagHtml(d){
@@ -2857,6 +2864,11 @@ function vEdit(){
     <div style="flex:1;text-align:center;font-size:40px;font-weight:700" aria-live="polite">${d.qty}</div>
     <button class="btn" data-act="qty" data-d="1" aria-label="One more" style="width:88px;font-size:32px">+</button>
    </div>
+  </div>
+
+  <div class="section">
+   ${textField('price','Price in dollars',d.price||'',false,'e.g. 25')}
+   <p class="hint">Goes on the printed tag.</p>
   </div>
 
   <div class="section">
@@ -2978,22 +2990,26 @@ function tagCanvas(it,key,dpi){
  const m=Math.round(0.07*dpi);
  const Q=qrMatrix(it.id);
  function drawQr(x,y,size){const px=Math.floor(size/Q.n);const off=Math.floor((size-px*Q.n)/2);for(let r=0;r<Q.n;r++)for(let cc=0;cc<Q.n;cc++)if(Q.dark(r,cc))ctx.fillRect(x+off+cc*px,y+off+r*px,px,px);}
- const sku=it.sku||'';const title=it.title||'';
+ const sku=it.sku||'';const title=it.title||'';const price=fmtPrice(it.price);
+ const bold=px=>'700 '+px+'px "Atkinson Hyperlegible", Roboto, system-ui, sans-serif';
  function textBlock(x,y,w,h,center,o){
-  const sk=skuLines(ctx,sku,mono,w,Math.min(h*0.3,dpi*o.skuMax),Math.round(dpi*o.skuMin));
+  const g=Math.round(dpi*0.035);
+  let pp=price?fitFont(ctx,[price],bold,w,Math.min(h*0.4,dpi*o.priceMax)):0;
+  const sk=skuLines(ctx,sku,mono,w,Math.min(h*0.25,dpi*o.skuMax),Math.round(dpi*o.skuMin));
   const lh=Math.round(sk.px*1.12);
-  let tp=Math.round(Math.min(sk.px*0.72,dpi*o.titleMax));ctx.font=body(tp);
+  const tp=Math.round(Math.min(sk.px*0.85,dpi*o.titleMax));ctx.font=body(tp);
   let tl=title?wrapLines(ctx,title,w,o.lines):[];const tlh=Math.round(tp*1.18);
-  const gap=tl.length?Math.round(sk.px*0.35):0;
-  let total=sk.lines.length*lh+gap+tl.length*tlh;
-  while(total>h&&tl.length>1){tl=wrapLines(ctx,title,w,tl.length-1);total=sk.lines.length*lh+gap+tl.length*tlh;}
-  if(total>h&&tl.length){tl=[];total=sk.lines.length*lh;}
-  let yy=y+Math.max(0,(h-total)/2);ctx.textAlign=center?'center':'left';const xx=center?x+w/2:x;
+  const tot=()=>(pp?Math.round(pp*1.05)+g:0)+sk.lines.length*lh+(tl.length?g+tl.length*tlh:0);
+  while(tot()>h&&tl.length>1)tl=wrapLines(ctx,title,w,tl.length-1);
+  if(tot()>h&&tl.length)tl=[];
+  while(tot()>h&&pp>Math.round(dpi*0.12))pp--;
+  let yy=y+Math.max(0,(h-tot())/2);ctx.textAlign=center?'center':'left';const xx=center?x+w/2:x;
+  if(pp){ctx.font=bold(pp);yy+=Math.round(pp*1.05);ctx.fillText(price,xx,yy-Math.round(pp*0.2));yy+=g;}
   ctx.font=mono(sk.px);for(const l of sk.lines){yy+=lh;ctx.fillText(l,xx,yy-Math.round(lh*0.18));}
-  yy+=gap;ctx.font=body(tp);for(const l of tl){yy+=tlh;ctx.fillText(l,xx,yy-Math.round(tlh*0.2));}
+  if(tl.length){yy+=g;ctx.font=body(tp);for(const l of tl){yy+=tlh;ctx.fillText(l,xx,yy-Math.round(tlh*0.2));}}
  }
- if(W>=H){const q=H-2*m;drawQr(m,m,q);const x=m+q+Math.round(0.07*dpi);textBlock(x,m,W-x-m,H-2*m,false,{skuMax:0.2,skuMin:0.105,titleMax:0.12,lines:2});}
- else{const hole=t.hole?Math.round(0.6*dpi):0;const q=Math.min(W-2*m,Math.round((H-hole-2*m)*0.58));drawQr(Math.round((W-q)/2),hole+m,q);const y=hole+m+q;textBlock(m,y,W-2*m,H-y-m,true,{skuMax:0.3,skuMin:0.2,titleMax:0.17,lines:3});}
+ if(W>=H){const q=H-2*m;drawQr(m,m,q);const x=m+q+Math.round(0.07*dpi);textBlock(x,m,W-x-m,H-2*m,false,{priceMax:0.34,skuMax:0.14,skuMin:0.1,titleMax:0.11,lines:2});}
+ else{const hole=t.hole?Math.round(0.6*dpi):0;const q=Math.min(W-2*m,Math.round((H-hole-2*m)*0.55));drawQr(Math.round((W-q)/2),hole+m,q);const y=hole+m+q;textBlock(m,y,W-2*m,H-y-m,true,{priceMax:0.45,skuMax:0.22,skuMin:0.16,titleMax:0.15,lines:3});}
  return c;
 }
 async function fontsReady(){try{await Promise.race([Promise.all([document.fonts.load('700 40px "Atkinson Hyperlegible Mono"'),document.fonts.load('400 40px "Atkinson Hyperlegible"')]),new Promise(r=>setTimeout(r,1500))]);}catch(e){}}
@@ -3042,7 +3058,7 @@ function vSettings(){
   </div>
   <div class="section">
    <div class="label">ABOUT THIS APP</div>
-   <p><b>Version: Test 008</b></p>
+   <p><b>Version: Test 009</b></p>
    <p>Everything you add is saved on this phone and works without internet. Use “Send today's work” to send a copy off the phone.</p>
    <p class="hint">Photos and talking work once the phone allows the camera and microphone. Google Lens opens from the share menu.</p>
   </div>
@@ -3070,11 +3086,11 @@ function vExport(){
 /* ---------- export ---------- */
 function todayItems(){return S.items.filter(i=>sameDay(i.updated,Date.now()));}
 function csvOf(items){
- const cols=['sku','id','title','category','subcategory','condition','quantity','origin','kept_building','kept_spot','collections','status','details','notes','made_by','created','updated'];
+ const cols=['sku','id','title','category','subcategory','condition','quantity','price','origin','kept_building','kept_spot','collections','status','details','notes','made_by','created','updated'];
  const q=v=>{v=String(v==null?'':v);return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
  const rows=items.map(i=>{const c=catOf(i.cat),s=subOf(i.cat,i.sub);
   const det=Object.entries(i.fields||{}).filter(([,v])=>v).map(([k,v])=>k+': '+v).concat(i.extra.filter(x=>x.value).map(x=>x.label+': '+x.value)).join('; ');
-  return [i.sku,i.id,i.title,c?c.name:'',s?s.name:'',i.cond,i.qty,i.origin,i.locB,i.loc,i.cols.join('; '),(STATUS.find(x=>x[0]===i.status)||[])[1],det,i.notes,i.worker,new Date(i.created).toISOString(),new Date(i.updated).toISOString()].map(q).join(',');});
+  return [i.sku,i.id,i.title,c?c.name:'',s?s.name:'',i.cond,i.qty,i.price||'',i.origin,i.locB,i.loc,i.cols.join('; '),(STATUS.find(x=>x[0]===i.status)||[])[1],det,i.notes,i.worker,new Date(i.created).toISOString(),new Date(i.updated).toISOString()].map(q).join(',');});
  return cols.join(',')+'\n'+rows.join('\n')+'\n';
 }
 /* One self-contained HTML report per day. The page shows every item with its photos, and it
@@ -3088,7 +3104,7 @@ function bundleOf(items){
    catName:c?c.name:'',subName:s?s.name:'',statusLabel:st?st[1]:i.status,createdAt:new Date(i.created).toISOString(),updatedAt:new Date(i.updated).toISOString()});
   delete o.isNew;delete o.dirty;delete o.statusSet;return o;});
  const times=items.flatMap(i=>[i.created,i.updated]).filter(Boolean);
- return {schemaVersion:1,kind:'store-inventory-bundle',bundleId:ulid(now),app:'store-inventory',appVersion:'test-008',
+ return {schemaVersion:1,kind:'store-inventory-bundle',bundleId:ulid(now),app:'store-inventory',appVersion:'test-009',
   worker:{letter:w.letter,name:w.name},createdAt:new Date(now).toISOString(),
   range:{from:new Date(Math.min(...times)).toISOString(),to:new Date(Math.max(...times)).toISOString()},
   buildings:[...new Set(items.map(i=>i.origin).filter(Boolean))],count:items.length,photoCount:pc,csv:csvOf(items),items:its};
@@ -3134,8 +3150,8 @@ function saveDraft(){
  if(!d.sku||d.sku.slice(0,-5)!==k){const n=(S.counters[k]||0)+1;S.counters[k]=n;const old=d.sku;d.sku=k+'-'+String(n).padStart(4,'0');if(old)what+=', label changed from '+old;}
  if(d.isNew){d.id=ulid(now);d.created=now;}
  d.updated=now;d.history=d.history||[];d.history.push({t:now,w,what});
- d.title=d.title.trim();d.extra=d.extra.filter(x=>x.label);
- const item={};for(const key of ['id','sku','cat','sub','origin','worker','title','cond','qty','locB','loc','cols','notes','status','photos','fields','extra','created','updated','history'])item[key]=d[key];
+ d.title=d.title.trim();d.price=String(d.price||'').trim();d.extra=d.extra.filter(x=>x.label);
+ const item={};for(const key of ['id','sku','cat','sub','origin','worker','title','price','cond','qty','locB','loc','cols','notes','status','photos','fields','extra','created','updated','history'])item[key]=d[key];
  if(!d.isNew){const old=S.items.find(i=>i.id===d.id);if(old&&old.example)item.example=true;}
  const idx=S.items.findIndex(i=>i.id===item.id);if(idx>=0)S.items[idx]=item;else S.items.push(item);
  S.lastOrigin=d.origin;persist();
@@ -3249,6 +3265,8 @@ document.addEventListener('click',e=>{const lab=e.target.closest&&e.target.close
 /* ---------- typing ---------- */
 document.addEventListener('input',e=>{
  const el=e.target,k=el.dataset&&el.dataset.key;if(!k)return;
+ /* typing straight away counts as choosing Type: the Talk/Type pill steps out of the way for this field */
+ if(mic.key===k&&mic.compact&&!mic.listening){mic.typeKey=k;closeMic();}
  const val=el.value;
  if(k==='search'){search=val;const y=window.scrollY;const rows=document.querySelector('.rows');
   /* update the list without rebuilding the search box */
@@ -3258,6 +3276,7 @@ document.addEventListener('input',e=>{
  if(k==='newcol'||k==='newx'){newText[k]=val;return;}
  if(!draft)return;
  if(k==='title')draft.title=val;
+ else if(k==='price')draft.price=val;
  else if(k==='notes')draft.notes=val;
  else if(k==='loc')draft.loc=val;
  else if(k.startsWith('f:'))draft.fields[k.slice(2)]=val;
@@ -3324,7 +3343,7 @@ function renderMic(){
  if(mic.collapsed){p.hidden=true;tab.hidden=false;tab.textContent=mic.listening?'Listening…':'Talk';return;}
  tab.hidden=true;p.hidden=false;
  if(mic.compact&&!mic.listening){
-  p.innerHTML=`<div class="card compact" role="region" aria-label="Talk to type"><button class="talk" data-act="mictalk"><span class="dot"></span><span class="lines">Tap to talk<small>into: ${esc(mic.label)}</small></span></button><button class="btn hide" data-act="mictype">Type instead</button></div>`;
+  p.innerHTML=`<div class="card pill" role="region" aria-label="Talk or type into: ${esc(mic.label)}"><button class="talk" data-act="mictalk" aria-label="Talk into: ${esc(mic.label)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="11.5" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21.5M8.5 21.5h7"/></svg>Talk</button><button class="typ" data-act="mictype" aria-label="Type into: ${esc(mic.label)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5.5" width="20" height="13" rx="2.5"/><path d="M6 9.5h.01M10 9.5h.01M14 9.5h.01M18 9.5h.01M6 12.5h.01M10 12.5h.01M14 12.5h.01M18 12.5h.01M8 15.5h8"/></svg>Type</button></div>`;
   place();keepClear();return;
  }
  p.innerHTML=`<div class="card" role="region" aria-label="Talk to type">
