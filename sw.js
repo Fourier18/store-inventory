@@ -1,5 +1,5 @@
 /* Offline support: keeps the app's own files on the phone. Item data lives in IndexedDB, not here. */
-const VERSION = 'store-inventory-test-011';
+const VERSION = 'store-inventory-test-012';
 const SHELL = ['./', './index.html', './app.html', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png'];
 
