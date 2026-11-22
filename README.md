@@ -2,7 +2,7 @@
 
 **Install the app: https://fourier18.github.io/store-inventory/**
 
-Version: Test 010
+Version: Test 011
 
 A phone app for walking through a store once and building a digital archive of every item: photo, category, condition, location, notes and a printed SKU label. It works offline and keeps all data on the phone. No account needed.
 
@@ -17,6 +17,7 @@ To use it without installing: https://fourier18.github.io/store-inventory/app.ht
 Plans for future builds are in the [dev log](DEVLOG.md).
 
 ## Changelog
+- **Test 011**: New gear button beside the name button opens Settings: add, rename and remove custom categories, subcategories, statuses and collections, pick the label size, change who is using the phone, and pick a theme (Store green, plus the seven themes from tu-torus: Light, Dark, Forest Green, Azure Night, Desert Sunset, Arctic Dawn, Plum Midnight). Custom statuses can also be added right on the item card. "Where it's kept" is now "Building" and the separate "You're working in" box is gone: the building picked when an item is first saved sets the label's building code, and moving it later changes only the Building field, not its label. Removed the helper lines that said the obvious.
 - **Test 010**: The price box is now labeled just "Price".
 - **Test 009**: New **Price** field on every item, included in the spreadsheet, the daily report and the item list. The printed tag now shows the price large beside the QR code, with the label (SKU) a little smaller. The big "Tap to talk / Type instead" bar is now a small two-button pill (Talk | Type) at the right edge above the keyboard. Tap Talk to open the talking panel; tap Type, or just start typing, and the pill steps aside for that box and doesn't come back on re-taps.
 - **Test 008**: "Print tag" button on the Saved screen and on every saved item. The tag has a QR code of the item's permanent ID, the label (SKU) and the title. Prints through the phone's print screen to any printer, or saves/shares the tag as a picture. Label sizes: 2 × 1 in, 50 × 30 mm, 2¼ × 1¼ in, and a 2 × 3½ in hang tag with room for a string hole. The QR code is made on the phone, no internet needed.
