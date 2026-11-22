@@ -2867,7 +2867,7 @@ function vEdit(){
   </div>
 
   <div class="section">
-   ${textField('price','Price in dollars',d.price||'',false,'e.g. 25')}
+   ${textField('price','Price',d.price||'',false,'e.g. 25')}
    <p class="hint">Goes on the printed tag.</p>
   </div>
 
@@ -3059,7 +3059,7 @@ function vSettings(){
   </div>
   <div class="section">
    <div class="label">ABOUT THIS APP</div>
-   <p><b>Version: Test 009</b></p>
+   <p><b>Version: Test 010</b></p>
    <p>Everything you add is saved on this phone and works without internet. Use “Send today's work” to send a copy off the phone.</p>
    <p class="hint">Photos and talking work once the phone allows the camera and microphone. Google Lens opens from the share menu.</p>
   </div>
@@ -3105,7 +3105,7 @@ function bundleOf(items){
    catName:c?c.name:'',subName:s?s.name:'',statusLabel:st?st[1]:i.status,createdAt:new Date(i.created).toISOString(),updatedAt:new Date(i.updated).toISOString()});
   delete o.isNew;delete o.dirty;delete o.statusSet;return o;});
  const times=items.flatMap(i=>[i.created,i.updated]).filter(Boolean);
- return {schemaVersion:1,kind:'store-inventory-bundle',bundleId:ulid(now),app:'store-inventory',appVersion:'test-009',
+ return {schemaVersion:1,kind:'store-inventory-bundle',bundleId:ulid(now),app:'store-inventory',appVersion:'test-010',
   worker:{letter:w.letter,name:w.name},createdAt:new Date(now).toISOString(),
   range:{from:new Date(Math.min(...times)).toISOString(),to:new Date(Math.max(...times)).toISOString()},
   buildings:[...new Set(items.map(i=>i.origin).filter(Boolean))],count:items.length,photoCount:pc,csv:csvOf(items),items:its};
