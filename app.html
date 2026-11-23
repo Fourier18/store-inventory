@@ -7,6 +7,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Inventory">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Atkinson+Hyperlegible+Mono:wght@500;700&display=swap">
@@ -137,6 +139,9 @@ input.talking,textarea.talking,.ed.talking{border-color:var(--accent);box-shadow
 .tile.plus{border-style:dashed;justify-content:center;align-items:center;text-align:center;color:var(--accent)}
 
 /* notices */
+.iosban{margin:0 0 14px;display:flex;flex-direction:column;gap:12px}
+.iosban .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.iosban .btn{min-height:60px;font-size:19px}
 .notice{border-radius:14px;padding:12px 14px;background:var(--warn-soft);color:var(--warn);font-size:17px;font-weight:700}
 .ok{border-radius:14px;padding:12px 14px;background:var(--accent-soft);color:var(--ink);font-size:17px}
 
@@ -2772,10 +2777,22 @@ function newDraft(keep){
 function go(s){if(mic.listening)stopMic();closeMic();mic.typeKey=null;screen=s;addingX=addingCat=addingSub=addingCol=addingSt=false;adm=null;render(true);}
 
 /* ---------- render ---------- */
+/* ---------- iPhone / iPad ---------- */
+const UA=navigator.userAgent;
+const IOS=/iPhone|iPad|iPod/.test(UA)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const STANDALONE=(()=>{try{return matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;}catch(e){return navigator.standalone===true;}})();
+let iosBanHidden=false;
+/* In a Safari tab, iOS may erase the app's saved items after 7 days without use, and a Safari tab's items never move into the home screen app. Home screen apps are exempt, so ask for that first. */
+function iosBanner(){
+ if(!IOS||STANDALONE||iosBanHidden||!(screen==='home'||screen==='setup'))return '';
+ return `<div class="notice iosban" role="note"><div>Put the app on your home screen first. In Safari, the iPhone can erase saved items after a week without use, and they don't move to the home screen app.</div>
+ <div class="row2"><a class="btn primary" href="index.html">Show me how</a><button class="btn" data-act="iosbanhide">Not now</button></div></div>`;
+}
 function render(top){
  const y=window.scrollY;
  const app=$('#app');
  app.innerHTML=({setup:vSetup,home:vHome,edit:vEdit,cat:vCat,sub:vSub,saved:vSaved,settings:vSettings,admin:vAdmin,export:vExport,tag:vTag})[screen]();
+ {const ban=iosBanner();if(ban){const h=app.querySelector('.top');if(h)h.insertAdjacentHTML('afterend',ban);else app.insertAdjacentHTML('afterbegin',ban);}}
  upgradeFields(app);
  if(screen==='tag')drawTagPreview();
  if(top)window.scrollTo(0,0);else window.scrollTo(0,y);
@@ -2856,7 +2873,7 @@ function linksHtml(d){
 }
 
 function lensHtml(d){
- if(d.photos.length)return `<button class="btn" data-act="lens" style="grid-column:1/-1"><span class="stackbtn">Google Lens<small>Opens the share menu. Pick Google Lens.</small></span></button>`;
+ if(d.photos.length)return `<button class="btn" data-act="lens" style="grid-column:1/-1"><span class="stackbtn">Google Lens<small>${IOS?'Opens the share menu. Pick Google. Needs the free Google app.':'Opens the share menu. Pick Google Lens.'}</small></span></button>`;
  return `<a class="btn" href="https://lens.google.com/" target="_blank" rel="noopener" style="grid-column:1/-1"><span class="stackbtn">Google Lens<small>Take a photo first to search it with Lens.</small></span></a>`;
 }
 function vEdit(){
@@ -3151,7 +3168,7 @@ function vAdmin(){
   </div>
   <div class="section">
    <div class="label">ABOUT THIS APP</div>
-   <p><b>Version: Test 012</b></p>
+   <p><b>Version: Test 013</b></p>
    <p>Everything you add is saved on this phone and works without internet. Use “Send today's work” to send a copy off the phone.</p>
    <p class="hint">Photos and talking work once the phone allows the camera and microphone. Google Lens opens from the share menu.</p>
   </div>
@@ -3243,7 +3260,7 @@ function bundleOf(items){
    catName:c?c.name:'',subName:s?s.name:'',statusLabel:st?st[1]:i.status,createdAt:new Date(i.created).toISOString(),updatedAt:new Date(i.updated).toISOString()});
   delete o.isNew;delete o.dirty;delete o.statusSet;return o;});
  const times=items.flatMap(i=>[i.created,i.updated]).filter(Boolean);
- return {schemaVersion:1,kind:'store-inventory-bundle',bundleId:ulid(now),app:'store-inventory',appVersion:'test-012',
+ return {schemaVersion:1,kind:'store-inventory-bundle',bundleId:ulid(now),app:'store-inventory',appVersion:'test-013',
   worker:{letter:w.letter,name:w.name},createdAt:new Date(now).toISOString(),
   range:{from:new Date(Math.min(...times)).toISOString(),to:new Date(Math.max(...times)).toISOString()},
   buildings:[...new Set(items.map(i=>i.origin).filter(Boolean))],count:items.length,photoCount:pc,csv:csvOf(items),items:its};
@@ -3260,7 +3277,7 @@ async function saveFile(name,data,fallbackCsv){
  if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
   try{await navigator.share({files:[file],title:name});return;}catch(e){if(e&&e.name==='AbortError')return;}
  }
- try{const url=URL.createObjectURL(new Blob([data],{type}));const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);toast('Saved '+name+' in Downloads');}
+ try{const url=URL.createObjectURL(new Blob([data],{type}));const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);toast(IOS?'Saved '+name+'. It’s in the Files app, in Downloads.':'Saved '+name+' in Downloads');}
  catch(e){if(fallbackCsv){csvFallback=fallbackCsv;render();}else toast("Couldn't save the file here.");}
 }
 function dataUrlFile(u,name){const i=u.indexOf(',');const m=(u.slice(0,i).match(/data:([^;]+)/)||[])[1]||'image/jpeg';const bin=atob(u.slice(i+1));const a=new Uint8Array(bin.length);for(let j=0;j<bin.length;j++)a[j]=bin.charCodeAt(j);return new File([a],name,{type:m});}
@@ -3378,6 +3395,7 @@ document.addEventListener('click',e=>{
    else{window.open('https://lens.google.com/','_blank','noopener');toast("This phone can't pass the photo along, so Lens opened by itself.");}break;}
   case 'lookupempty':toast(draft&&draft.photos.length?'Type or say the name first. Google Lens works from the photo now.':'Type or say the name first.');{const t=document.querySelector('[data-key="title"]');if(t)t.scrollIntoView({block:'center'});}break;
   case 'mictalk':toggleTalk();break;
+  case 'iosbanhide':iosBanHidden=true;render();break;
   case 'micdone':{if(mic.listening)stopMic();const fe=fieldEl();if(fe)fe.blur();closeMic();break;}
   case 'mictype':{if(mic.listening)stopMic();const fe=fieldEl();mic.typeKey=mic.key;closeMic();if(fe){fe.focus();try{const n=fe.value.length;fe.setSelectionRange(n,n);}catch(err){}fe.scrollIntoView({block:'center'});}break;}
   case 'micaside':mic.collapsed=true;renderMic();break;
@@ -3463,6 +3481,45 @@ function setField(v){const el=fieldEl();if(!el)return;el.value=v;el.dispatchEven
 function openMic(key,label){initDict();if(mic.listening)stopMic();const old=fieldEl();if(old)old.classList.remove('talking');mic.key=key;mic.label=label;mic.collapsed=false;mic.compact=true;mic.note='';renderMic();}
 function closeMic(){const el=fieldEl();if(el)el.classList.remove('talking');mic.key=null;mic.compact=false;$('#mic').hidden=true;$('#micTab').hidden=true;$('#app').style.paddingBottom='';}
 function SR(){return window.SpeechRecognition||window.webkitSpeechRecognition;}
+/* iPhone notes: talking needs Siri turned on, and Apple has said it may not work in home screen apps at all.
+   Safari on iPhone also ends a talking session on its own after a pause, so we start it again while the person is still talking. */
+const TALK_KEY='store-inventory-talk-crash',APPV='test-013';
+function talkBroken(){try{return localStorage.getItem(TALK_KEY)===APPV;}catch(e){return false;}}
+function talkMark(on){try{if(on)sessionStorage.setItem(TALK_KEY,'1');else sessionStorage.removeItem(TALK_KEY);}catch(e){}}
+/* If the app reloaded while talking was starting (seen on some iPhones), switch talking off until the next version. */
+try{if(IOS&&sessionStorage.getItem(TALK_KEY)){sessionStorage.removeItem(TALK_KEY);localStorage.setItem(TALK_KEY,APPV);}}catch(e){}
+function talkErr(code){
+ if(IOS){
+  if(code==='not-allowed')return 'The iPhone didn’t allow the microphone. Open Settings, find Safari, tap Microphone and pick Allow. Or tap Type instead.';
+  if(code==='service-not-allowed')return STANDALONE?'Talking doesn’t work in the home screen app on this iPhone. Tap Type instead.':'Talking on iPhone needs Siri turned on in Settings. Or tap Type instead.';
+  if(code==='audio-capture')return 'The iPhone couldn’t use the microphone. Close other apps that use it, then tap Talk again. Or tap Type instead.';
+ }else if(code==='not-allowed'||code==='service-not-allowed')return 'The microphone is off for this app. Allow it in Chrome’s site settings, or type in the box for now.';
+ if(code==='no-speech')return 'I didn’t hear anything. Tap Talk and try again.';
+ if(IOS&&code==='aborted')return '';
+ return 'The microphone stopped. Tap Talk to try again.';
+}
+/* Some iPhones send each new piece with the earlier words repeated at the front. Keep only the longer one. */
+function joinFinal(a,b){if(IOS&&a&&b){const x=a.trim().toLowerCase(),y=b.trim().toLowerCase();if(y.startsWith(x))return b.trim();}return join(a,b);}
+function webStart(el,again){
+ let r;const stopped='Listening stopped. Tap Talk to keep going.';
+ try{r=new (SR())();}catch(e){mic.listening=false;mic.want=false;mic.note=again?stopped:IOS?'Talking doesn’t work on this iPhone. Tap Type instead.':'Talking isn’t available on this phone. You can type in the box for now.';return;}
+ mic.rec=r;mic.engine='web';r.lang=navigator.language||'en-US';r.continuous=true;r.interimResults=true;
+ let heard=false,failed=false;const began=Date.now();
+ r.onstart=()=>{talkMark(false);};
+ r.onresult=ev=>{heard=true;let fin='',int='';for(let i=0;i<ev.results.length;i++){const t=ev.results[i][0].transcript;if(ev.results[i].isFinal)fin=joinFinal(fin,t);else int=join(int,t);}
+  mic.committed=join(mic.base,fin);mic.live=int;setField(int?join(mic.committed,int):mic.committed);updLive();};
+ r.onerror=ev=>{failed=true;talkMark(false);mic.note=again&&ev.error!=='no-speech'&&ev.error!=='aborted'?stopped:talkErr(ev.error);if(ev.error!=='no-speech'&&ev.error!=='aborted')mic.want=false;};
+ r.onend=()=>{talkMark(false);if(mic.rec!==r)return;
+  /* iPhone Safari stops after a pause: carry on while the person hasn't tapped stop. */
+  if(IOS&&mic.want&&!failed&&heard&&mic.restarts<30){
+   mic.restarts++;mic.base=mic.committed;mic.live='';
+   try{webStart(fieldEl(),true);if(mic.listening){renderMic();return;}}catch(e){}
+  }
+  if(IOS&&!again&&mic.want&&!failed&&!heard&&Date.now()-began<1500&&!mic.note)mic.note=STANDALONE?'Talking doesn’t seem to work in the home screen app on this iPhone. Tap Type instead.':'Talking stopped right away. Check that Siri is turned on in Settings, then tap Talk again. Or tap Type instead.';
+  mic.want=false;mic.listening=false;mic.live='';renderMic();};
+ try{if(IOS)talkMark(true);r.start();mic.listening=true;}
+ catch(e){talkMark(false);mic.listening=false;mic.want=false;mic.note=again?stopped:IOS?'Talking doesn’t work on this iPhone. Tap Type instead.':'Talking isn’t available on this phone. You can type in the box for now.';}
+}
 function toggleTalk(){if(mic.listening){stopMic();return;}startMic();}
 function startMic(){
  mic.compact=false;
@@ -3474,19 +3531,15 @@ function startMic(){
   p.catch(err=>{mic.listening=false;const c=err&&err.code;
    mic.note=c==='not_granted'?'The microphone is off for this page. You can type in the box for now.':c==='dismissed'?'Tap Talk again and choose Allow to use the microphone.':c==='unavailable'?(dictBad=true,'Talking isn’t available here. You can type in the box for now.'):c==='stopped'?'':'The microphone didn’t start. Tap Talk to try again.';
    renderMic();});
+ }else if(IOS&&talkBroken()){
+  mic.note='Talking closed the app last time on this iPhone, so it’s off for now. Tap Type instead.';
  }else if(SR()){
-  try{const r=new (SR())();mic.rec=r;mic.engine='web';r.lang=navigator.language||'en-US';r.continuous=true;r.interimResults=true;
-   r.onresult=ev=>{let fin='',int='';for(let i=0;i<ev.results.length;i++){const t=ev.results[i][0].transcript;if(ev.results[i].isFinal)fin=join(fin,t);else int=join(int,t);}
-    mic.committed=join(mic.base,fin);mic.live=int;setField(int?join(mic.committed,int):mic.committed);updLive();};
-   r.onerror=ev=>{mic.note=ev.error==='not-allowed'||ev.error==='service-not-allowed'?'The microphone is off for this app. Allow it in Chrome’s site settings, or type in the box for now.':ev.error==='no-speech'?'I didn’t hear anything. Tap Talk and try again.':'The microphone stopped. Tap Talk to try again.';};
-   r.onend=()=>{mic.listening=false;mic.live='';renderMic();};
-   r.start();mic.listening=true;}
-  catch(e){mic.listening=false;mic.note='Talking isn’t available on this phone. You can type in the box for now.';}
+  mic.want=true;mic.restarts=0;webStart(el);
  }else{mic.note='Talking isn’t available on this phone. You can type in the box for now.';}
  if(mic.listening&&el){el.blur();el.classList.add('talking');}
  renderMic();
 }
-function stopMic(){mic.listening=false;if(mic.engine==='claude'&&dict){dict.stop().catch(()=>{});}else if(mic.rec){try{mic.rec.stop()}catch(e){}}const el=fieldEl();if(el)el.classList.remove('talking');mic.live='';renderMic();}
+function stopMic(){mic.want=false;mic.listening=false;if(mic.engine==='claude'&&dict){dict.stop().catch(()=>{});}else if(mic.rec){try{mic.rec.stop()}catch(e){}}const el=fieldEl();if(el)el.classList.remove('talking');mic.live='';renderMic();}
 function updLive(){const l=$('#micLive');if(l)l.textContent=mic.live?'“'+mic.live+'”':(mic.listening?'Listening…':'');}
 function renderMic(){
  const p=$('#mic'),tab=$('#micTab');

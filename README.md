@@ -2,7 +2,7 @@
 
 **Install the app: https://fourier18.github.io/store-inventory/**
 
-Version: Test 012
+Version: Test 013
 
 A phone app for walking through a store once and building a digital archive of every item: photo, category, condition, location, notes and a printed SKU label. It works offline and keeps all data on the phone. No account needed.
 
@@ -12,11 +12,19 @@ A phone app for walking through a store once and building a digital archive of e
 3. If there's no button: tap **⋮** (top right) → **Add to home screen** (or **Install app**) → **Install**.
 4. Open the green **Inventory** icon on the home screen.
 
+## Install on iPhone or iPad
+1. Open **https://fourier18.github.io/store-inventory/** in **Safari**.
+2. Tap **⋯** next to the web address, then **Share**. (Older iPhones: tap the Share button at the bottom.)
+3. Scroll down and tap **Add to Home Screen**.
+4. Leave **Open as Web App** on and tap **Add**.
+5. Always open the green **Inventory** icon. Items saved in a Safari tab can be erased by iOS after 7 days without use and don't move into the home screen app.
+
 To use it without installing: https://fourier18.github.io/store-inventory/app.html
 
 Plans for future builds are in the [dev log](DEVLOG.md).
 
 ## Changelog
+- **Test 013**: Works on iPhone and iPad. The install page shows iPhone steps (Safari: ⋯, Share, Add to Home Screen, Add) and tells people in other iPhone browsers to open it in Safari, with a Copy the address button. In a Safari tab on iPhone, the app shows a banner asking to put it on the home screen first, because iOS can erase a Safari tab's saved items after 7 days without use. Talking on iPhone restarts by itself when Safari stops after a pause, removes repeated words, and shows plain iPhone messages when it can't work (Siri off, microphone not allowed, or not working in the home screen app); if talking ever closes the app, it switches itself off on that phone and Type stays ready. The Google Lens button on iPhone says to pick Google from the share menu. Android is unchanged.
 - **Test 012**: The "Look it up" buttons (eBay sold, eBay for sale, Reverb, Discogs, AbeBooks, Vinted, Google Lens) now show on every item card from the start. Until then they appeared only after a name was typed. Google Lens works from the photo; the name buttons ask for a name if there isn't one yet.
 - **Test 011**: New gear button beside the name button opens Settings: add, rename and remove custom categories, subcategories, statuses and collections, pick the label size, change who is using the phone, and pick a theme (Store green, plus the seven themes from tu-torus: Light, Dark, Forest Green, Azure Night, Desert Sunset, Arctic Dawn, Plum Midnight). Custom statuses can also be added right on the item card. "Where it's kept" is now "Building" and the separate "You're working in" box is gone: the building picked when an item is first saved sets the label's building code, and moving it later changes only the Building field, not its label. Removed the helper lines that said the obvious.
 - **Test 010**: The price box is now labeled just "Price".

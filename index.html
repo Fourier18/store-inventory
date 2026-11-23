@@ -7,6 +7,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Inventory">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
@@ -37,6 +39,9 @@ ol b{white-space:nowrap}
 .dots{display:inline-flex;align-items:center;justify-content:center;width:1.5em;height:1.5em;border:2px solid var(--ink);border-radius:8px;font-weight:700;line-height:1}
 .ok{background:var(--accent-soft);border-radius:18px;padding:18px;font-size:24px;font-weight:700}
 .hint{color:var(--ink-2);font-size:20px}
+.share{display:inline-block;width:1.25em;height:1.25em;vertical-align:-0.2em;color:#0A84FF}
+.warn{background:#FFF1C9;color:#5A3D00;border-radius:18px;padding:18px;font-size:22px;font-weight:700}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .warn{background:#3A2E0E;color:#FFE3A1}}
 [hidden]{display:none!important}
 </style>
 </head><body>
@@ -58,8 +63,31 @@ ol b{white-space:nowrap}
     <p class="hint">Use Chrome. If this page opened inside another app, tap <span class="dots" aria-hidden="true">⋮</span> and pick <b>Open in Chrome</b> first.</p>
   </section>
 
-  <a class="btn plain" href="app.html">Open the app without installing</a>
-  <p class="hint">Version: Test 012</p>
+  <section class="card" id="iosSteps" hidden>
+    <div id="iosOther" class="warn" hidden>
+      <p>On iPhone, use <b>Safari</b> to put the app on your home screen.</p>
+      <p style="margin-top:12px">Open Safari, tap the web address at the top or bottom, and type <b>fourier18.github.io/store-inventory</b></p>
+      <button id="copyAddr" class="btn plain" style="margin-top:14px">Copy the address</button>
+    </div>
+    <h2>Put it on your home screen</h2>
+    <ol id="iosNew" hidden>
+      <li>Tap the <span class="dots" aria-label="three dots">⋯</span> button next to the web address.</li>
+      <li>Tap <b>Share</b>.</li>
+      <li>Scroll down and tap <b>Add to Home Screen</b>.</li>
+      <li>Leave <b>Open as Web App</b> turned on. Tap <b>Add</b>.</li>
+    </ol>
+    <ol id="iosOld" hidden>
+      <li>Tap the Share button <svg class="share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Share"><path d="M12 15V3M7.5 7.5 12 3l4.5 4.5"/><path d="M8 10H6a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1h-2"/></svg> at the bottom of the screen.</li>
+      <li>Scroll down and tap <b>Add to Home Screen</b>.</li>
+      <li>Tap <b>Add</b>.</li>
+    </ol>
+    <p class="hint" id="iosAlt">Don't see that? Look for the Share button <svg class="share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7.5 7.5 12 3l4.5 4.5"/><path d="M8 10H6a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1h-2"/></svg> instead, tap it, then tap <b>Add to Home Screen</b>.</p>
+    <p class="hint">Then find the green <b>Inventory</b> icon on your home screen and tap it. Always open the app from that icon.</p>
+    <p class="hint">Items you save in Safari stay in Safari and don't move to the home screen app, so put it on the home screen before you start.</p>
+  </section>
+
+  <a class="btn plain" href="app.html" id="noInstall">Open the app without installing</a>
+  <p class="hint">Version: Test 013</p>
 </main>
 <script>
 let promptEvt = null;
@@ -74,6 +102,24 @@ btn.addEventListener('click', async () => {
   try { await promptEvt.userChoice; } catch (e) {}
   promptEvt = null; btn.hidden = true;
 });
+/* iPhone and iPad: no Install button exists, so show the Safari steps instead of the Android ones. */
+const ua = navigator.userAgent;
+const isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+if (isIOS) {
+  document.getElementById('steps').hidden = true;
+  document.getElementById('iosSteps').hidden = false;
+  document.getElementById('noInstall').textContent = 'Open it in Safari without adding it';
+  const other = /CriOS|FxiOS|EdgiOS|OPiOS|DuckDuckGo|GSA\/|FBAN|FBAV|Instagram|Line\/|Twitter|Snapchat|Pinterest/.test(ua);
+  if (other) document.getElementById('iosOther').hidden = false;
+  const v = +((ua.match(/Version\/(\d+)/) || [])[1] || 0);
+  document.getElementById(v >= 26 ? 'iosNew' : 'iosOld').hidden = false;
+  if (v && v < 26) document.getElementById('iosAlt').hidden = true;
+  document.getElementById('copyAddr').addEventListener('click', async e => {
+    const b = e.currentTarget;
+    try { await navigator.clipboard.writeText('https://fourier18.github.io/store-inventory/'); b.textContent = 'Copied. Now open Safari'; }
+    catch (err) { b.textContent = 'Type the address above into Safari'; }
+  });
+}
 window.addEventListener('appinstalled', () => { btn.hidden = true; done.hidden = false; });
 if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {}));
 </script>
