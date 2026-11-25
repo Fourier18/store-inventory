@@ -2,7 +2,7 @@
 
 **Install the app: https://fourier18.github.io/store-inventory/**
 
-Version: Test 014
+Version: Test 015
 
 A phone app for walking through a store once and building a digital archive of every item: photo, category, condition, location, notes and a printed SKU label. It works offline and keeps all data on the phone. No account needed.
 
@@ -24,6 +24,7 @@ To use it without installing: https://fourier18.github.io/store-inventory/app.ht
 Plans for future builds are in the [dev log](DEVLOG.md).
 
 ## Changelog
+- **Test 015**: New **Save or send as PDF** button, both on the Send today's work screen and on the report page. It opens the phone's print screen with a clean printable copy: each item with up to 4 smaller photos, its label, and all its details, with no search bar or buttons. Pick **Save as PDF** there, then share the saved file from the phone's Files app, Drive or email. On the report page the PDF holds the items showing at that moment, so a search or filter narrows it. The report page itself is unchanged and still carries the full data for the master inventory. Printing tags works as before.
 - **Test 014**: New **Report a problem or idea** button at the top of Settings (the gear). Pick "Something is wrong" or "An idea or request", type or talk the message, and tap Send. It goes straight to Joshua's email through Web3Forms, with no email account needed on the phone. The app version, phone type and screen size go with it. Without internet the report waits on the phone and sends by itself once it's back online.
 - **Test 013**: Works on iPhone and iPad. The install page shows iPhone steps (Safari: ⋯, Share, Add to Home Screen, Add) and tells people in other iPhone browsers to open it in Safari, with a Copy the address button. In a Safari tab on iPhone, the app shows a banner asking to put it on the home screen first, because iOS can erase a Safari tab's saved items after 7 days without use. Talking on iPhone restarts by itself when Safari stops after a pause, removes repeated words, and shows plain iPhone messages when it can't work (Siri off, microphone not allowed, or not working in the home screen app); if talking ever closes the app, it switches itself off on that phone and Type stays ready. The Google Lens button on iPhone says to pick Google from the share menu. Android is unchanged.
 - **Test 012**: The "Look it up" buttons (eBay sold, eBay for sale, Reverb, Discogs, AbeBooks, Vinted, Google Lens) now show on every item card from the start. Until then they appeared only after a name was typed. Google Lens works from the photo; the name buttons ask for a name if there isn't one yet.

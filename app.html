@@ -220,6 +220,7 @@ details.rec summary{min-height:56px;display:flex;align-items:center;font-weight:
 <div id="mic" hidden></div>
 <div id="printArea"></div>
 <style id="pageStyle"></style>
+<style id="rpStyle"></style>
 <button id="micTab" hidden data-act="micshow">Talk</button>
 <div id="sheet" hidden></div>
 <div id="toast" class="toast" hidden></div>
@@ -260,15 +261,43 @@ dt{color:var(--ink-2)}dd{margin:0;overflow-wrap:anywhere;white-space:pre-wrap}
 .lb .ctl{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .lb button,.lb a{min-height:52px;min-width:64px;padding:0 16px;border-radius:14px;border:2px solid #fff;background:transparent;color:#fff;font:inherit;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
 footer{color:var(--ink-2);font-size:13px;margin:24px 0 8px}
+/*rp*/
+.rp{color:#000;background:#fff;font:10.5pt/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.rp h1{font-size:17pt;margin:0 0 3pt;color:#000}
+.rp .rpm{font-size:9.5pt;color:#333;margin:0 0 8pt;display:flex;flex-wrap:wrap;gap:2pt 12pt}
+.rp .rpm b{color:#000}
+.rp .rpi{display:flex;gap:10pt;align-items:flex-start;padding:7pt 0;border-top:1px solid #999;break-inside:avoid;page-break-inside:avoid}
+.rp .rpp{flex:0 0 1.6in;width:1.6in;display:flex;flex-wrap:wrap;gap:3pt;align-content:flex-start}
+.rp .rpp img{display:block;width:1.6in;height:1.6in;object-fit:cover;border:1px solid #bbb;border-radius:3pt}
+.rp .rpp.many img{width:calc(.8in - 1.5pt);height:calc(.8in - 1.5pt)}
+.rp .rpp .none{width:1.6in;height:1.6in;border:1px dashed #999;border-radius:3pt;display:flex;align-items:center;justify-content:center;color:#666;font-size:9pt}
+.rp .rpp .more{width:100%;font-size:8.5pt;color:#444}
+.rp .rpx{flex:1;min-width:0}
+.rp .t{font-weight:700;font-size:12pt;margin:0 0 2pt;color:#000;overflow-wrap:anywhere}
+.rp .sku{display:inline-block;font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;font-size:10pt;background:none;color:#000;border:1px solid #555;border-radius:3pt;padding:0 4pt;margin-bottom:3pt;overflow-wrap:anywhere}
+.rp dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:1pt 8pt;font-size:9.5pt}
+.rp dt{color:#444}
+.rp dd{margin:0;color:#000;overflow-wrap:anywhere;white-space:pre-wrap}
+.rp .id{grid-column:1/-1;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:8pt;color:#555;margin-top:2pt;overflow-wrap:anywhere}
+/*/rp*/
+.rp{display:none}
+@media print{
+@page{margin:12mm}
+html,body{background:#fff!important;color:#000}
+.wrap{max-width:none;padding:0}
+.wrap>*:not(.rp),.lb{display:none!important}
+.rp{display:block}
+}
 </style>
 <div class="wrap">
 <h1 id="ttl">Inventory report</h1>
 <div class="meta" id="meta"></div>
-<div class="bar"><button id="dlcsv">Download spreadsheet</button><button id="dlph" class="q">Download photos</button></div>
+<div class="bar"><button id="dlcsv">Download spreadsheet</button><button id="dlph" class="q">Download photos</button><button id="dlpdf" class="q">Save or send as PDF</button></div>
 <div class="filters"><input id="q" type="search" placeholder="Search name, label or notes" aria-label="Search"><select id="cat" aria-label="Category"></select><select id="st" aria-label="Status"></select></div>
 <p class="count" id="count"></p>
 <div class="cards" id="cards"></div>
 <footer id="foot"></footer>
+<div class="rp" id="pr"></div>
 </div>
 <div class="lb" id="lb" hidden><img id="lbimg" alt=""><div class="cap" id="lbcap"></div><div class="ctl"><button id="lbprev" aria-label="Previous photo">‹</button><a id="lbdl" download>Save photo</a><button id="lbclose">Close</button><button id="lbnext" aria-label="Next photo">›</button></div></div>
 <script type="application/json" id="bundle-data">__BUNDLE_DATA__</script>
@@ -291,22 +320,28 @@ $('#cat').innerHTML='<option value="">All categories</option>'+Object.keys(cats)
 $('#st').innerHTML='<option value="">Any status</option>'+Object.keys(sts).map(function(c){return '<option>'+esc(c)+'</option>';}).join('');
 function details(i){var out=[];Object.keys(i.fields||{}).forEach(function(k){if(i.fields[k])out.push([k,i.fields[k]]);});(i.extra||[]).forEach(function(x){if(x.value)out.push([x.label,x.value]);});return out;}
 function row(k,v){return v||v===0?'<dt>'+esc(k)+'</dt><dd>'+esc(v)+'</dd>':'';}
-function draw(){
+function info(i){
+ var kept=(BN[i.locB]||i.locB||'')+(i.loc?', '+i.loc:'');
+ return '<p class="t">'+esc(i.title||'(no name yet)')+'</p><span class="sku">'+esc(i.sku)+'</span><dl>'+
+  row('Kind',[i.catName,i.subName].filter(Boolean).join(' › '))+row('Status',i.statusLabel)+row('Condition',i.cond)+row('How many',i.qty)+row('Price',i.price?fmtPrice(i.price):'')+
+  row('Made in',BN[i.origin]||i.origin)+row('Kept at',kept)+row('Collections',(i.cols||[]).join(', '))+
+  details(i).map(function(d){return row(d[0],d[1]);}).join('')+row('Notes',i.notes)+row('Updated',when(i.updatedAt))+
+  '<div class="id">ID '+esc(i.id)+'</div></dl>';
+}
+function filtered(){
  var q=$('#q').value.trim().toLowerCase(),c=$('#cat').value,s=$('#st').value;
- var list=D.items.filter(function(i){
+ return D.items.filter(function(i){
   if(c&&(i.catName||'Other')!==c)return false;if(s&&i.statusLabel!==s)return false;
   if(q){var hay=[i.title,i.sku,i.notes,i.loc,i.catName,i.subName].concat(details(i).map(function(d){return d.join(' ');})).join(' ').toLowerCase();if(hay.indexOf(q)<0)return false;}
   return true;});
+}
+function draw(){
+ var list=filtered();
  $('#count').textContent='Showing '+list.length+' of '+D.items.length;
  $('#cards').innerHTML=list.length?list.map(function(i){
   var idx=D.items.indexOf(i),p=i.photos||[];
   var ph=p.length?'<button class="ph" data-i="'+idx+'" aria-label="Show photos"><img src="'+p[0].data+'" alt=""><span>'+p.length+'</span></button>':'<div class="ph">No photo</div>';
-  var kept=(BN[i.locB]||i.locB||'')+(i.loc?', '+i.loc:'');
-  return '<div class="card">'+ph+'<div><p class="t">'+esc(i.title||'(no name yet)')+'</p><span class="sku">'+esc(i.sku)+'</span><dl>'+
-   row('Kind',[i.catName,i.subName].filter(Boolean).join(' › '))+row('Status',i.statusLabel)+row('Condition',i.cond)+row('How many',i.qty)+row('Price',i.price?fmtPrice(i.price):'')+
-   row('Made in',BN[i.origin]||i.origin)+row('Kept at',kept)+row('Collections',(i.cols||[]).join(', '))+
-   details(i).map(function(d){return row(d[0],d[1]);}).join('')+row('Notes',i.notes)+row('Updated',when(i.updatedAt))+
-   '<div class="id">ID '+esc(i.id)+'</div></dl></div></div>';}).join(''):'<div class="empty">Nothing matches.</div>';
+  return '<div class="card">'+ph+'<div>'+info(i)+'</div></div>';}).join(''):'<div class="empty">Nothing matches.</div>';
 }
 ['q','cat','st'].forEach(function(id){$('#'+id).addEventListener('input',draw);});
 var cur=null,ci=0;
@@ -322,6 +357,27 @@ $('#dlcsv').onclick=function(){var u=URL.createObjectURL(new Blob(['﻿'+D.csv],
 $('#dlph').onclick=function(){var all=[];D.items.forEach(function(i){(i.photos||[]).forEach(function(p){all.push(p);});});
  if(!all.length){alert('There are no photos in this report.');return;}
  var n=0;(function next(){if(n>=all.length)return;save(all[n].data,all[n].name);n++;setTimeout(next,450);})();};
+/* Save or send as PDF: a print layout of the items showing now, with up to 4 smaller photos each,
+ printed through the browser's own print screen (Save as PDF). Smaller copies of the photos keep the file small. */
+var PRMAX=4,prReady=false;
+function small(src){return new Promise(function(res){var im=new Image();im.onload=function(){try{var k=Math.min(1,400/Math.max(im.naturalWidth,im.naturalHeight));var c=document.createElement('canvas');c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.7));}catch(e){res(src);}};im.onerror=function(){res(src);};im.src=src;});}
+function buildPr(list,srcs){
+ var k=0;
+ $('#pr').innerHTML='<h1>'+esc($('#ttl').textContent)+'</h1><div class="rpm">'+$('#meta').innerHTML+(list.length<D.items.length?'<span>Showing '+list.length+' of '+D.items.length+'</span>':'')+'</div>'+
+  list.map(function(i){var p=i.photos||[],sh=p.slice(0,PRMAX);
+   var ph=sh.length?sh.map(function(x){var s=srcs?srcs[k++]:x.data;return '<img src="'+s+'" alt="">';}).join('')+(p.length>PRMAX?'<div class="more">+'+(p.length-PRMAX)+' more photo'+(p.length-PRMAX===1?'':'s')+'</div>':''):'<div class="none">No photo</div>';
+   return '<div class="rpi"><div class="rpp'+(sh.length>1?' many':'')+'">'+ph+'</div><div class="rpx">'+info(i)+'</div></div>';}).join('');
+}
+function imgsReady(){return Promise.all([].map.call(document.querySelectorAll('#pr img'),function(im){return im.decode?im.decode().catch(function(){}):0;}));}
+window.addEventListener('beforeprint',function(){if(!prReady)buildPr(filtered(),null);});
+window.addEventListener('afterprint',function(){prReady=false;});
+$('#dlpdf').onclick=function(){var b=this;if(b.disabled)return;var label=b.textContent;b.disabled=true;b.textContent='Making the PDF…';
+ var list=filtered(),all=[];list.forEach(function(i){(i.photos||[]).slice(0,PRMAX).forEach(function(p){all.push(p.data);});});
+ Promise.all(all.map(small)).then(function(srcs){buildPr(list,srcs);return imgsReady();}).then(function(){
+  prReady=true;var t=document.title;document.title=base;
+  b.disabled=false;b.textContent=label;
+  try{window.print();}catch(e){alert('This browser would not open printing.');}
+  setTimeout(function(){document.title=t;},3000);});};
 draw();
 })();
 </script></template>
@@ -3082,7 +3138,7 @@ async function tagPrint(){
  let url;try{url=tagCanvas(tagItem,k,300).toDataURL('image/png');}catch(e){toast("Couldn't make the tag.");return;}
  const w=t.w+t.u,h=t.h+t.u;
  $('#pageStyle').textContent='@page{size:'+w+' '+h+';margin:0}@media print{#printArea{width:'+w+';height:'+h+'}}';
- const pa=$('#printArea');pa.innerHTML='<img alt="">';const im=pa.firstChild;
+ const pa=$('#printArea');pa.className='';pa.innerHTML='<img alt="">';const im=pa.firstChild;
  await new Promise(r=>{im.onload=r;im.onerror=r;im.src=url;});
  try{window.print();}catch(e){toast("This phone wouldn't open printing. Use Save or share as a picture.");}
 }
@@ -3243,7 +3299,7 @@ function vAdmin(){
   </div>
   <div class="section">
    <div class="label">ABOUT THIS APP</div>
-   <p><b>Version: Test 014</b></p>
+   <p><b>Version: Test 015</b></p>
    <p>Everything you add is saved on this phone and works without internet. Use “Send today's work” to send a copy off the phone.</p>
    <p class="hint">Photos and talking work once the phone allows the camera and microphone. Google Lens opens from the share menu.</p>
   </div>
@@ -3299,6 +3355,38 @@ function admRemove(kind,cat,code){
 }
 
 let csvFallback='';
+/* Save or send as PDF from the Send today's work screen: the same print layout as the report page,
+ printed through the phone's print screen. It uses the small photo copies already on the phone.
+ The layout's styles live once, in the report template between the rp markers. */
+async function reportPrint(){
+ const items=todayItems();if(!items.length)return;
+ let b;try{b=bundleOf(items);}catch(e){toast("Couldn't make the PDF.");return;}
+ const rs=$('#rpStyle');
+ if(!rs.textContent){const css=(($('#bundleTpl').content.querySelector('style')||{}).textContent||'').split('/*rp*/')[1]||'';
+  rs.textContent=css.split('/*/rp*/')[0].split('.rp{').join('#printArea .rp{').split('.rp ').join('#printArea .rp ')+
+   '@media print{#printArea.rep{overflow:visible!important;width:auto!important;height:auto!important;break-after:auto!important;page-break-after:auto!important}}';}
+ const BN={BB:'Barn (BB)',SB:'Sales building (SB)'},w=b.worker,MAX=4;
+ const when=t=>new Date(t).toLocaleString([],{year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+ const day=t=>new Date(t).toLocaleDateString([],{year:'numeric',month:'short',day:'numeric'});
+ const row=(k,v)=>v||v===0?'<dt>'+esc(k)+'</dt><dd>'+esc(v)+'</dd>':'';
+ const from=day(b.range.from),to=day(b.range.to);
+ const head='<h1>'+esc('Inventory report: '+(w.name?w.name+' ('+w.letter+')':w.letter))+'</h1><div class="rpm"><span><b>'+b.count+'</b> item'+(b.count===1?'':'s')+'</span><span><b>'+b.photoCount+'</b> photo'+(b.photoCount===1?'':'s')+'</span><span>'+esc(from===to?from:from+' to '+to)+'</span><span>'+esc(b.buildings.map(x=>BN[x]||x).join(', '))+'</span><span>Worker '+esc(w.letter)+'</span><span>App '+esc(b.appVersion)+'</span></div>';
+ const body=b.items.map((i,n)=>{const p=items[n].photos||[],sh=p.slice(0,MAX);
+  const ph=sh.length?sh.map(x=>'<img src="'+(x.thumb||x.full)+'" alt="">').join('')+(p.length>MAX?'<div class="more">+'+(p.length-MAX)+' more photo'+(p.length-MAX===1?'':'s')+'</div>':''):'<div class="none">No photo</div>';
+  const det=Object.entries(i.fields||{}).filter(([,v])=>v).concat((i.extra||[]).filter(x=>x.value).map(x=>[x.label,x.value]));
+  const kept=(BN[i.locB]||i.locB||'')+(i.loc?', '+i.loc:'');
+  return '<div class="rpi"><div class="rpp'+(sh.length>1?' many':'')+'">'+ph+'</div><div class="rpx"><p class="t">'+esc(i.title||'(no name yet)')+'</p><span class="sku">'+esc(i.sku)+'</span><dl>'+
+   row('Kind',[i.catName,i.subName].filter(Boolean).join(' › '))+row('Status',i.statusLabel)+row('Condition',i.cond)+row('How many',i.qty)+row('Price',i.price?fmtPrice(i.price):'')+
+   row('Made in',BN[i.origin]||i.origin)+row('Kept at',kept)+row('Collections',(i.cols||[]).join(', '))+
+   det.map(d=>row(d[0],d[1])).join('')+row('Notes',i.notes)+row('Updated',when(i.updatedAt))+
+   '<div class="id">ID '+esc(i.id)+'</div></dl></div></div>';}).join('');
+ $('#pageStyle').textContent='@page{margin:12mm}';
+ const pa=$('#printArea');pa.className='rep';pa.innerHTML='<div class="rp">'+head+body+'</div>';
+ await Promise.all([...pa.querySelectorAll('img')].map(im=>im.decode?im.decode().catch(()=>{}):0));
+ const t=document.title;document.title='inventory-'+(w.letter||'X')+'-'+stamp();
+ try{window.print();}catch(e){toast("This phone wouldn't open printing.");}
+ setTimeout(()=>{document.title=t;},3000);
+}
 function vExport(){
  const today=S.items.filter(i=>sameDay(i.updated,Date.now()));
  const ph=today.reduce((n,i)=>n+i.photos.length,0);
@@ -3306,10 +3394,11 @@ function vExport(){
  <div class="stack">
   <div class="section">
    <h2>${today.length} item${today.length===1?'':'s'} added or changed today</h2>
-   <p class="hint">${ph} photo${ph===1?'':'s'} included. Both open the share menu, so you can send them to Google Drive or email.</p>
+   <p class="hint">${ph} photo${ph===1?'':'s'} included. The report and the spreadsheet open the share menu, so you can send them to Google Drive or email. The PDF opens the print screen, where you pick Save as PDF.</p>
   </div>
   ${today.length?`<button class="btn huge primary" data-act="dlbundle"><span class="stackbtn">Send today's report<small>Photos and details in one page that opens on any phone or computer</small></span></button>
-  <button class="btn huge" data-act="dlcsv"><span class="stackbtn">Send as a spreadsheet<small>Details only, opens in Sheets or Excel</small></span></button>`:`<div class="empty">Nothing new today yet.</div>`}
+  <button class="btn huge" data-act="dlcsv"><span class="stackbtn">Send as a spreadsheet<small>Details only, opens in Sheets or Excel</small></span></button>
+  <button class="btn huge" data-act="dlpdf"><span class="stackbtn">Save or send as PDF<small>Photos and details, ready to print or email</small></span></button>`:`<div class="empty">Nothing new today yet.</div>`}
   ${csvFallback?`<div class="section"><div class="label">SPREADSHEET TEXT</div><p class="hint">The phone wouldn't save the file. Copy this instead.</p><textarea autocomplete="off" autocapitalize="sentences" spellcheck="true" id="f-csvout" readonly style="font-family:var(--f-mono);font-size:14px;min-height:200px">${esc(csvFallback)}</textarea><button class="btn" data-act="copycsv">Copy</button></div>`:''}
  </div>`;
 }
@@ -3335,7 +3424,7 @@ function bundleOf(items){
    catName:c?c.name:'',subName:s?s.name:'',statusLabel:st?st[1]:i.status,createdAt:new Date(i.created).toISOString(),updatedAt:new Date(i.updated).toISOString()});
   delete o.isNew;delete o.dirty;delete o.statusSet;return o;});
  const times=items.flatMap(i=>[i.created,i.updated]).filter(Boolean);
- return {schemaVersion:1,kind:'store-inventory-bundle',bundleId:ulid(now),app:'store-inventory',appVersion:'test-014',
+ return {schemaVersion:1,kind:'store-inventory-bundle',bundleId:ulid(now),app:'store-inventory',appVersion:'test-015',
   worker:{letter:w.letter,name:w.name},createdAt:new Date(now).toISOString(),
   range:{from:new Date(Math.min(...times)).toISOString(),to:new Date(Math.max(...times)).toISOString()},
   buildings:[...new Set(items.map(i=>i.origin).filter(Boolean))],count:items.length,photoCount:pc,csv:csvOf(items),items:its};
@@ -3465,6 +3554,7 @@ document.addEventListener('click',e=>{
   case 'sheetno':closeSheet();break;
   case 'export':csvFallback='';go('export');break;
   case 'dlbundle':{const items=todayItems();if(!items.length)break;let h;try{h=bundleHtml(bundleOf(items));}catch(err){toast("Couldn't make the report.");break;}saveFile('inventory-'+(S.worker?S.worker.letter:'X')+'-'+stamp()+'.html',h,null);break;}
+  case 'dlpdf':reportPrint();break;
   case 'dlcsv':{const c=csvOf(todayItems());saveFile('inventory-'+(S.worker?S.worker.letter:'X')+'-'+stamp()+'.csv',c,c);break;}
   case 'copycsv':{const ta=$('#f-csvout');const done=()=>toast('Copied');
    try{navigator.clipboard.writeText(csvFallback).then(done,()=>{ta.select();toast('Selected. Use Copy from the menu.');});}catch(err){ta.select();}break;}
@@ -3564,7 +3654,7 @@ function closeMic(){const el=fieldEl();if(el)el.classList.remove('talking');mic.
 function SR(){return window.SpeechRecognition||window.webkitSpeechRecognition;}
 /* iPhone notes: talking needs Siri turned on, and Apple has said it may not work in home screen apps at all.
    Safari on iPhone also ends a talking session on its own after a pause, so we start it again while the person is still talking. */
-const TALK_KEY='store-inventory-talk-crash',APPV='test-014';
+const TALK_KEY='store-inventory-talk-crash',APPV='test-015';
 function talkBroken(){try{return localStorage.getItem(TALK_KEY)===APPV;}catch(e){return false;}}
 function talkMark(on){try{if(on)sessionStorage.setItem(TALK_KEY,'1');else sessionStorage.removeItem(TALK_KEY);}catch(e){}}
 /* If the app reloaded while talking was starting (seen on some iPhones), switch talking off until the next version. */
