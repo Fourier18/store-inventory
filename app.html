@@ -108,6 +108,8 @@ input[type=text],input[type=search],textarea,.ed{width:100%;min-height:60px;padd
 .ed{display:block;position:relative;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;cursor:text;outline:none}
 .ed:focus{border-color:var(--accent)}
 .ed.multi{min-height:120px}
+.ed.multi.big,textarea.big{min-height:220px}
+.repdone{font-size:22px;text-align:center;line-height:1.4}
 .ed.blank::before{content:attr(data-ph);position:absolute;left:16px;top:14px;right:16px;color:var(--ink-2);opacity:.75;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 textarea{min-height:120px;resize:vertical}
 input.talking,textarea.talking,.ed.talking{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
@@ -2791,7 +2793,7 @@ function iosBanner(){
 function render(top){
  const y=window.scrollY;
  const app=$('#app');
- app.innerHTML=({setup:vSetup,home:vHome,edit:vEdit,cat:vCat,sub:vSub,saved:vSaved,settings:vSettings,admin:vAdmin,export:vExport,tag:vTag})[screen]();
+ app.innerHTML=({setup:vSetup,home:vHome,edit:vEdit,cat:vCat,sub:vSub,saved:vSaved,settings:vSettings,admin:vAdmin,report:vReport,export:vExport,tag:vTag})[screen]();
  {const ban=iosBanner();if(ban){const h=app.querySelector('.top');if(h)h.insertAdjacentHTML('afterend',ban);else app.insertAdjacentHTML('afterbegin',ban);}}
  upgradeFields(app);
  if(screen==='tag')drawTagPreview();
@@ -3123,6 +3125,78 @@ function admRow(kind,cat,code,name,showCode){
 function admAdd(kind,cat,label,ph,btn){
  return isAdm('add',kind,cat)?admEditor(label,ph):`<button class="btn quiet" data-act="admadd" data-kind="${kind}" data-cat="${esc(cat||'')}">${esc(btn)}</button>`;
 }
+/* ---------- report a problem or idea: goes to Joshua's email through Web3Forms ----------
+   The key below is Web3Forms' public form key. It is not a password and holds no email address;
+   all anyone can do with it is send a message to the form's owner. Reports wait on the phone until it's online. */
+const W3F_KEY='ee5b457e-1afe-4e9d-a681-a0271085e7dd',W3F_URL='https://api.web3forms.com/submit';
+let repType='',repState='',repName=null;
+function repQueue(){return S.reportOutbox||(S.reportOutbox=[]);}
+function repPayload(r){
+ const kind=r.type==='bug'?'Something is wrong':'Idea or request';
+ return {access_key:W3F_KEY,
+  subject:(r.type==='bug'?'Inventory app problem from ':'Inventory app idea from ')+(r.name||'someone'),
+  from_name:'Store Inventory app',
+  'Type':kind,'Message':r.msg,'From':r.name||'(no name)','Worker letter':r.letter||'?',
+  'App version':r.ver,'Phone and browser':r.ua,'Installed on home screen':r.installed?'Yes':'No',
+  'Screen size':r.scr,'Items on this phone':String(r.items),'Written at':new Date(r.t).toString(),'Report ID':r.id};
+}
+async function flushReports(){
+ if(flushReports.busy)return 'busy';
+ const q=repQueue();if(!q.length)return 'none';
+ if(navigator.onLine===false)return 'offline';
+ flushReports.busy=true;let out='sent';
+ try{
+  for(const r of q.slice()){
+   try{
+    const res=await fetch(W3F_URL,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(repPayload(r))});
+    let j=null;try{j=await res.json();}catch(e){}
+    if(res.ok&&!(j&&j.success===false)){S.reportOutbox=repQueue().filter(x=>x.id!==r.id);persist();}
+    else{out='refused';break;}
+   }catch(e){out='offline';break;}
+  }
+ }finally{flushReports.busy=false;}
+ if(screen==='report'&&!repState&&!(document.activeElement&&document.activeElement.closest&&document.activeElement.closest('#app')))render();
+ return out;
+}
+async function sendReport(){
+ const msg=(newText.rep||'').trim();
+ if(!repType){toast('First pick: something is wrong, or an idea.');return;}
+ if(!msg){toast('Type or say your message first.');const el=document.querySelector('[data-key="rep"]');if(el)el.focus();return;}
+ const name=(repName===null?workerName():repName).trim();
+ repQueue().push({id:ulid(),t:Date.now(),type:repType,msg,name,letter:S.worker?S.worker.letter:'',ver:APPV,ua:navigator.userAgent,
+  installed:STANDALONE,scr:screen_w(),items:S.items.length});
+ persist();
+ if(mic.listening)stopMic();closeMic();
+ repState='sending';render();
+ const r=await flushReports();
+ repState=r==='sent'?'sent':r==='refused'?'refused':'queued';
+ newText.rep='';repType='';repName=null;render(true);
+}
+function screen_w(){try{return Math.round(innerWidth)+' x '+Math.round(innerHeight);}catch(e){return '';}}
+function vReport(){
+ const waiting=repQueue().length;
+ if(repState==='sending')return `${header('Report a problem or idea','admin')}<div class="stack"><div class="section"><p class="repdone">Sending…</p></div></div>`;
+ if(repState)return `${header('Report a problem or idea','admin')}
+ <div class="stack"><div class="section">
+  <p class="repdone">${repState==='sent'?'<b>Sent.</b> Thank you!':repState==='queued'?'<b>Saved on this phone.</b><br>It will send by itself when the phone is online.':'<b>Saved on this phone.</b><br>It didn\'t send just now. The app will try again later.'}</p>
+  <button class="btn huge primary" data-act="repdone">Done</button>
+ </div></div>`;
+ const nm=repName===null?workerName():repName;
+ return `${header('Report a problem or idea','admin')}
+ <div class="stack">
+  <div class="section">
+   <div class="label">WHAT IS IT?</div>
+   ${chipRow('reptype',[['bug','Something is wrong'],['idea','An idea or request']],repType,'tall')}
+  </div>
+  <div class="section">
+   <label class="field"><span>Tell us about it</span><textarea class="big" autocomplete="off" autocapitalize="sentences" spellcheck="true" id="f-rep" name="inv-rep" data-key="rep" data-speak="Your message" placeholder="What happened, or what would help">${esc(newText.rep||'')}</textarea></label>
+   <label class="field"><span>Your name</span><input type="text" autocomplete="off" autocapitalize="sentences" spellcheck="true" id="f-repname" name="inv-repname" data-key="repname" data-speak="Your name" value="${esc(nm)}"></label>
+   <p class="hint">The app version and phone type go with it, so Joshua can find the problem.</p>
+  </div>
+  <button class="btn huge primary" data-act="repsend">Send</button>
+  ${waiting?`<div class="section"><p>${waiting===1?'1 report is':waiting+' reports are'} waiting on this phone. ${waiting===1?'It sends':'They send'} by itself when the phone is online.</p><button class="btn" data-act="repretry">Try sending now</button></div>`:''}
+ </div>`;
+}
 function vAdmin(){
  const exN=S.items.filter(i=>i.example).length;
  const custSt=S.customStatuses||[];
@@ -3138,6 +3212,7 @@ function vAdmin(){
   </details>`;}).join('');
  return `${header('Settings','home')}
  <div class="stack">
+  <button class="btn huge" data-act="report"><span class="stackbtn">Report a problem or idea<small>Goes straight to Joshua</small></span></button>
   <div class="section">
    <div class="label">CATEGORIES AND SUBCATEGORIES</div>
    ${cats}
@@ -3168,7 +3243,7 @@ function vAdmin(){
   </div>
   <div class="section">
    <div class="label">ABOUT THIS APP</div>
-   <p><b>Version: Test 013</b></p>
+   <p><b>Version: Test 014</b></p>
    <p>Everything you add is saved on this phone and works without internet. Use “Send today's work” to send a copy off the phone.</p>
    <p class="hint">Photos and talking work once the phone allows the camera and microphone. Google Lens opens from the share menu.</p>
   </div>
@@ -3260,7 +3335,7 @@ function bundleOf(items){
    catName:c?c.name:'',subName:s?s.name:'',statusLabel:st?st[1]:i.status,createdAt:new Date(i.created).toISOString(),updatedAt:new Date(i.updated).toISOString()});
   delete o.isNew;delete o.dirty;delete o.statusSet;return o;});
  const times=items.flatMap(i=>[i.created,i.updated]).filter(Boolean);
- return {schemaVersion:1,kind:'store-inventory-bundle',bundleId:ulid(now),app:'store-inventory',appVersion:'test-013',
+ return {schemaVersion:1,kind:'store-inventory-bundle',bundleId:ulid(now),app:'store-inventory',appVersion:'test-014',
   worker:{letter:w.letter,name:w.name},createdAt:new Date(now).toISOString(),
   range:{from:new Date(Math.min(...times)).toISOString(),to:new Date(Math.max(...times)).toISOString()},
   buildings:[...new Set(items.map(i=>i.origin).filter(Boolean))],count:items.length,photoCount:pc,csv:csvOf(items),items:its};
@@ -3367,6 +3442,11 @@ document.addEventListener('click',e=>{
    const ex=statuses().find(x=>x[1].toLowerCase()===n.toLowerCase());const code=ex?ex[0]:addStatus(n);
    draft.status=code;draft.statusSet=true;addingSt=false;newText.newst='';closeMic();draft.dirty=true;render();break;}
   case 'admin':go('admin');break;
+  case 'report':repState='';go('report');break;
+  case 'reptype':repType=v;render();break;
+  case 'repsend':sendReport();break;
+  case 'repdone':repState='';go('admin');break;
+  case 'repretry':flushReports().then(r=>{toast(r==='sent'?'Sent. Thank you!':r==='refused'?"It didn't send. The app will try again later.":'The phone is offline. It will send when it\'s back online.');render();});break;
   case 'theme':S.theme=v;applyTheme();persist();render();break;
   case 'admadd':adm={mode:'add',kind:b.dataset.kind,cat:b.dataset.cat||''};newText.adm='';render();setTimeout(()=>{const el=$('#f-adm');if(el)el.focus();},50);break;
   case 'admren':adm={mode:'ren',kind:b.dataset.kind,cat:b.dataset.cat||'',code:b.dataset.code};newText.adm=admName(adm);render();setTimeout(()=>{const el=$('#f-adm');if(el){el.focus();caretEnd(el);}},50);break;
@@ -3442,7 +3522,8 @@ document.addEventListener('input',e=>{
   const tmp=document.createElement('div');tmp.innerHTML=vHome();const nr=tmp.querySelector('.rows');if(rows&&nr)rows.replaceWith(nr);const h2=document.querySelector('#app h2'),nh=tmp.querySelector('h2');if(h2&&nh)h2.replaceWith(nh);window.scrollTo(0,y);return;}
  if(k==='letter'){const L=val.toUpperCase().replace(/[^A-Z]/g,'').slice(0,1);el.value=L;if(L){S.worker={name:L==='D'?'Dad':L==='J'?'Joshua':'Worker '+L,letter:L};persist();}return;}
  if(k==='newcat'||k==='newsub'){newText[k]=val;const p=$('#codePrev');if(p)p.innerHTML=codePreview(k);return;}
- if(k==='newcol'||k==='newx'||k==='newst'||k==='adm'){newText[k]=val;return;}
+ if(k==='newcol'||k==='newx'||k==='newst'||k==='adm'||k==='rep'){newText[k]=val;return;}
+ if(k==='repname'){repName=val;return;}
  if(!draft)return;
  if(k==='title')draft.title=val;
  else if(k==='price')draft.price=val;
@@ -3483,7 +3564,7 @@ function closeMic(){const el=fieldEl();if(el)el.classList.remove('talking');mic.
 function SR(){return window.SpeechRecognition||window.webkitSpeechRecognition;}
 /* iPhone notes: talking needs Siri turned on, and Apple has said it may not work in home screen apps at all.
    Safari on iPhone also ends a talking session on its own after a pause, so we start it again while the person is still talking. */
-const TALK_KEY='store-inventory-talk-crash',APPV='test-013';
+const TALK_KEY='store-inventory-talk-crash',APPV='test-014';
 function talkBroken(){try{return localStorage.getItem(TALK_KEY)===APPV;}catch(e){return false;}}
 function talkMark(on){try{if(on)sessionStorage.setItem(TALK_KEY,'1');else sessionStorage.removeItem(TALK_KEY);}catch(e){}}
 /* If the app reloaded while talking was starting (seen on some iPhones), switch talking off until the next version. */
@@ -3584,6 +3665,7 @@ initDict();setTimeout(initDict,1200);
 (async function boot(){
  try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});}catch(e){}
  S=await load();applyTheme();if(dropSamples())persist();screen=S.worker?'home':'setup';render(true);
+ flushReports();window.addEventListener('online',()=>flushReports());document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')flushReports();});
 })();
 })();
 </script>
