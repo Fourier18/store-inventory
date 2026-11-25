@@ -100,6 +100,7 @@ details.admcat summary code{font-family:var(--f-mono);font-weight:400;color:var(
 .chip{min-height:60px;padding:8px 10px;border-radius:14px;border:2px solid var(--line);background:var(--surface);font-size:19px;font-weight:700;cursor:pointer;text-align:center;color:var(--ink)}
 .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .chip.wide{grid-column:1/-1}
+.chip small{display:block;font-size:14px;font-weight:600;line-height:1.25;margin-top:3px}
 
 /* inputs */
 .field{display:flex;flex-direction:column;gap:6px}
@@ -2698,7 +2699,7 @@ const CATS=[
 ];
 const COND=['Excellent','Very good','Good','Acceptable','Poor','Not working'];
 const STATUS=[['photo','To photograph','Need photo'],['ready','Ready to list','Ready'],['listed','Listed','Listed'],['sold','Sold','Sold']];
-const THEMES=[['','Store green (follows the phone)',''],['tt-light','Light','#ffffff'],['tt-dark','Dark','#1a1a1e'],['forest','Forest Green','#13201a'],['azure-night','Azure Night','#0d1b2e'],['desert-sunset','Desert Sunset','#fdf6ec'],['arctic-dawn','Arctic Dawn','#f5f9fc'],['plum-midnight','Plum Midnight','#1c1524']];
+const THEMES=[['tt-light','Light','#ffffff'],['tt-dark','Dark','#1a1a1e'],['forest','Forest Green','#13201a'],['azure-night','Azure Night','#0d1b2e'],['desert-sunset','Desert Sunset','#fdf6ec'],['arctic-dawn','Arctic Dawn','#f5f9fc'],['plum-midnight','Plum Midnight','#1c1524'],['','Store green','',"(follows the phone's light/dark mode)"]];
 const BLDG={BB:'Barn (BB)',SB:'Sales building (SB)'};
 const F=(k,l,o)=>({k,l,o});
 const artist=F('artist','Artist'), label=F('label','Record label'), brand=F('brand','Brand'), model=F('model','Model'), year=F('year','Year'), serial=F('serial','Serial number'), size=F('size','Size'), material=F('material','Material');
@@ -2905,7 +2906,7 @@ function tagHtml(d){
  return `<div class="tagwrap"><div class="tag" aria-live="polite"><span class="hole"></span><span><span class="sub">${d.sku&&s===d.sku?'Label':'Label it will get'}</span><br><span class="sku" id="skuText">${esc(s)}</span></span></div></div>`;
 }
 function chipRow(act,opts,cur,cls,extra){
- return `<div class="chips ${cls||''}">${opts.map(([v,l])=>`<button class="chip" data-act="${act}" data-v="${esc(v)}" ${extra||''} aria-pressed="${cur===v}">${esc(l)}</button>`).join('')}</div>`;
+ return `<div class="chips ${cls||''}">${opts.map(([v,l,sub])=>`<button class="chip" data-act="${act}" data-v="${esc(v)}" ${extra||''} aria-pressed="${cur===v}">${esc(l)}${sub?`<small>${esc(sub)}</small>`:''}</button>`).join('')}</div>`;
 }
 function textField(key,label,val,ta,ph){
  return `<label class="field"><span>${esc(label)}</span>${ta?`<textarea autocomplete="off" autocapitalize="sentences" spellcheck="true" id="f-${esc(key)}" name="inv-${esc(key)}" data-key="${esc(key)}" data-speak="${esc(label)}" placeholder="${esc(ph||'')}">${esc(val)}</textarea>`:`<input type="text" autocomplete="off" autocapitalize="sentences" spellcheck="true" id="f-${esc(key)}" name="inv-${esc(key)}" data-key="${esc(key)}" data-speak="${esc(label)}" value="${esc(val)}" placeholder="${esc(ph||'')}">`}</label>`;
@@ -3287,7 +3288,7 @@ function vAdmin(){
   </div>
   <div class="section">
    <div class="label">THEME</div>
-   ${chipRow('theme',THEMES.map(x=>[x[0],x[1]]),S.theme||'','tall')}
+   ${chipRow('theme',THEMES.map(x=>[x[0],x[1],x[3]]),S.theme||'','tall')}
   </div>
   <div class="section">
    <div class="label">LABEL SIZE</div>
@@ -3299,7 +3300,7 @@ function vAdmin(){
   </div>
   <div class="section">
    <div class="label">ABOUT THIS APP</div>
-   <p><b>Version: Test 015</b></p>
+   <p><b>Version: Test 016</b></p>
    <p>Everything you add is saved on this phone and works without internet. Use “Send today's work” to send a copy off the phone.</p>
    <p class="hint">Photos and talking work once the phone allows the camera and microphone. Google Lens opens from the share menu.</p>
   </div>
@@ -3424,7 +3425,7 @@ function bundleOf(items){
    catName:c?c.name:'',subName:s?s.name:'',statusLabel:st?st[1]:i.status,createdAt:new Date(i.created).toISOString(),updatedAt:new Date(i.updated).toISOString()});
   delete o.isNew;delete o.dirty;delete o.statusSet;return o;});
  const times=items.flatMap(i=>[i.created,i.updated]).filter(Boolean);
- return {schemaVersion:1,kind:'store-inventory-bundle',bundleId:ulid(now),app:'store-inventory',appVersion:'test-015',
+ return {schemaVersion:1,kind:'store-inventory-bundle',bundleId:ulid(now),app:'store-inventory',appVersion:'test-016',
   worker:{letter:w.letter,name:w.name},createdAt:new Date(now).toISOString(),
   range:{from:new Date(Math.min(...times)).toISOString(),to:new Date(Math.max(...times)).toISOString()},
   buildings:[...new Set(items.map(i=>i.origin).filter(Boolean))],count:items.length,photoCount:pc,csv:csvOf(items),items:its};
@@ -3654,7 +3655,7 @@ function closeMic(){const el=fieldEl();if(el)el.classList.remove('talking');mic.
 function SR(){return window.SpeechRecognition||window.webkitSpeechRecognition;}
 /* iPhone notes: talking needs Siri turned on, and Apple has said it may not work in home screen apps at all.
    Safari on iPhone also ends a talking session on its own after a pause, so we start it again while the person is still talking. */
-const TALK_KEY='store-inventory-talk-crash',APPV='test-015';
+const TALK_KEY='store-inventory-talk-crash',APPV='test-016';
 function talkBroken(){try{return localStorage.getItem(TALK_KEY)===APPV;}catch(e){return false;}}
 function talkMark(on){try{if(on)sessionStorage.setItem(TALK_KEY,'1');else sessionStorage.removeItem(TALK_KEY);}catch(e){}}
 /* If the app reloaded while talking was starting (seen on some iPhones), switch talking off until the next version. */
